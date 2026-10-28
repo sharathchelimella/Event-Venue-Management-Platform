@@ -1,0 +1,6 @@
+{
+  "name": "CampusEventHub",
+  "description": "Campus venue booking and event management system with role-based workflows for Students, Organizers, and Admins, conflict prevention, and live seat capacity tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
