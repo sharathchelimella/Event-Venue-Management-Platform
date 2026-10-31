@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../services/api.ts';
 import { IUser, UserRole } from '../types/index.ts';
-import { X, Lock, Mail, User, AlertCircle, ArrowRight } from 'lucide-react';
+import { X, Lock, Mail, User, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -21,6 +21,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'Student' | 'Organizer'>('Student');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -154,17 +155,50 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">Password</label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-[11px] text-slate-500 hover:text-slate-900 font-medium transition-colors flex items-center gap-1 focus:outline-hidden"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5" />
+                      <span>Hide</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Show</span>
+                    </>
+                  )}
+                </button>
+              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-slate-900"
+                  className="w-full pl-9 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-slate-900"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition-colors focus:outline-hidden"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
 

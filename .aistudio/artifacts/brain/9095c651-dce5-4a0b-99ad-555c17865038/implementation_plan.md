@@ -1,100 +1,77 @@
-# Row-Level Security (RLS) Implementation Plan for CampusEventHub
+# Strict Role-Based View Isolation & Demo Bar Removal
 
-Implement strict, granular **Row-Level Security (RLS)** across the Express and MongoDB architecture. This enforces authenticated ownership and role predicates across all database queries and mutations, preventing unauthorized cross-tenant data access, privilege escalation, or student roster exposure, alongside an interactive **RLS Security Policy & Audit Panel** in the Admin Console.
+Hide the top demo switcher bar for logged-in students and attendees so they only see the student experience (Browse Events, Venues Directory, My Registrations) without any organizer or admin UI affordances. Organizers and Admins access their dedicated portals exclusively through authenticated login with role verification.
 
 ---
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The following RLS specifications have been confirmed based on your choices:
-> - **Architecture**: Server-side Express and MongoDB row-level security middleware intercepting and wrapping all model operations.
-> - **Enforcement Strictness**: Strict RLS with authenticated user (`auth.uid`) and role (`auth.role`) predicates on every operation.
-> - **Admin Visibility**: An interactive RLS Security Policy and Audit viewer added to the Admin Console, including a real-time policy matrix, access audit logs, and an interactive policy simulator.
+> The following adjustments have been confirmed based on your answers:
+> - **Student Role Isolation**: When a student or attendee is logged in, the top demo bar and role switcher are completely hidden from the header. Students never see "Organizer" or "Admin" switcher buttons, portals, or queues.
+> - **Credential-Based Privileged Access**: Access to the Organizer Portal and Admin Console requires signing in with valid Organizer (`priya.organizer@campus.edu`) or Admin (`dean.admin@campus.edu`) account credentials via the standard Sign In modal.
+> - **Navigation Cleanliness**: The main navigation bar renders strictly student-scoped links (`Browse Events`, `Venues Directory`, `My Registrations`) when a student is logged in, with zero clutter from administrative or organizer features.
 
 ---
 
-## 1. Row-Level Security Policy Matrix
+## 1. Overview & Core Concept
 
-| Collection | Operation | Enforced RLS Predicate / Rule | Permitted Roles | Violation Response |
-| :--- | :--- | :--- | :--- | :--- |
-| **`venues`** | `SELECT` | `true` (Public catalog of venues & capacity) | All (`Student`, `Organizer`, `Admin`, `Guest`) | Allowed |
-| **`venues`** | `INSERT`, `UPDATE` | `auth.role == 'Admin'` | `Admin` only | `403 Forbidden: Only campus administrators can manage venue capacities.` |
-| **`events`** | `SELECT (Approved)` | `status == 'Approved'` | All (`Student`, `Organizer`, `Admin`, `Guest`) | Allowed |
-| **`events`** | `SELECT (Pending / Rejected)` | `organizer_id == auth.uid OR auth.role == 'Admin'` | Owner `Organizer` or `Admin` | `403 Forbidden: Cannot view pending/rejected events belonging to other organizers.` |
-| **`events`** | `INSERT` | `auth.role IN ['Organizer', 'Admin'] AND organizer_id == auth.uid` | `Organizer`, `Admin` | `403 Forbidden: Must be an organizer and cannot forge organizer_id.` |
-| **`events`** | `UPDATE (status)` | `auth.role == 'Admin'` (Organizers cannot self-approve) | `Admin` only | `403 Forbidden: Only campus administrators can approve or reject event bookings.` |
-| **`registrations`** | `SELECT (Personal)` | `user_id == auth.uid OR auth.role == 'Admin'` | Record Owner or `Admin` | `403 Forbidden: Cannot access another student's registered passes.` |
-| **`registrations`** | `SELECT (Attendee Roster)`| `event.organizer_id == auth.uid OR auth.role == 'Admin'` | Event Owner or `Admin` | `403 Forbidden: Only the event organizer or administrator can view student contact rosters.` |
-| **`registrations`** | `INSERT` | `auth.uid == requested_user_id AND auth.role == 'Student'` | Authenticated `Student` | `403 Forbidden: Cannot register seats on behalf of other accounts.` |
-| **`registrations`** | `DELETE` | `user_id == auth.uid OR auth.role == 'Admin'` | Record Owner or `Admin` | `403 Forbidden: Cannot cancel registrations for another student.` |
+CampusEventHub should feel like a real campus portal for students where they see only what is relevant to an attendee. By removing the demo role switcher bar for logged-in students:
+1. **Students (Attendees)** enjoy an uncluttered, student-only interface: browsing events, checking real-time capacity, registering for seats, and managing their personal passes.
+2. **Organizers & Admins** authenticate securely through the Sign In modal to access their respective management tools (venue booking, attendee rosters, and admin approval queues).
 
 ---
 
-## 2. Technical Architecture & Component Flow
+## 2. User Experience & Visual Design
 
+### UI Layout Structure
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        CampusEventHub Web Client                       │
-├────────────────────────────────────────────────────────────────────────┤
-│ Top Bar: Brand, Nav, Demo Role Switcher (Student / Organizer / Admin)  │
-├────────────────────────────────────────────────────────────────────────┤
-│ Active View Router:                                                    │
-│  ├── Student Feed: Public Approved events, 1-Click register            │
-│  ├── My Registrations: Read own passes (RLS filtered: user_id == uid)  │
-│  ├── Organizer Portal: Manage own events (RLS: organizer_id == uid)    │
-│  └── Admin Portal: Pending Queue, Venues, + NEW RLS Security Panel     │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ HTTP Fetch + x-user-id Header
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                     Express API Server + RLS Layer                     │
-├────────────────────────────────────────────────────────────────────────┤
-│ RLS Interceptor & Context Middleware:                                  │
-│  1. Extract auth context: { uid, role, email, name }                   │
-│  2. Assert role requirements (requireRole('Admin'), requireAuth())     │
-│  3. Query Filter Injection (automatically injects ownership clauses)   │
-│  4. Mutation Guard (asserts record ownership prior to update/delete)   │
-│  5. Security Audit Logger (records policy checks & denials)            │
-├────────────────────────────────────────────────────────────────────────┤
-│ New Dedicated Endpoint:                                                │
-│  ├── GET  /api/admin/rls/policies (Fetches active policy definitions)  │
-│  ├── POST /api/admin/rls/simulate (Simulates policy check for UI)      │
-│  └── GET  /api/admin/rls/audit-logs (Recent access/rejection records)  │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ Mongoose / MongoDB Engine
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                 MongoDB Database (campusEventHub)                      │
-│   (Collections: users, venues, events, registrations)                  │
-└────────────────────────────────────────────────────────────────────────┘
+[Unauthenticated Guest]
+  ├── Top Navigation: Browse Events · Venues Directory
+  └── Top Right: "Sign In / Register" Button (Opens AuthModal with quick prefill helpers)
+
+[Logged-in Student (Alex Rivera)]
+  ├── Top Demo Bar: HIDDEN (Clean zero-clutter top header)
+  ├── Top Navigation: Browse Events · Venues Directory · My Registrations
+  └── Top Right: Student Name (Alex Rivera), Role Badge (Student), Logout Button
+
+[Logged-in Organizer (Priya Sharma)]
+  ├── Top Navigation: Browse Events · Venues Directory · Organizer Portal
+  └── Top Right: Priya Sharma · Organizer · Logout Button
+
+[Logged-in Admin (Dean Office)]
+  ├── Top Navigation: Browse Events · Venues Directory · Admin Queue · Venues & RLS
+  └── Top Right: Dean Office · Admin · Logout Button
 ```
 
----
-
-## 3. User Experience & Visual Design
-
-### Admin RLS Security & Policy Audit Console
-- Added as a sub-tab / panel within the **Campus Administration Console**:
-  1. **Policy Definitions Matrix**: Clean high-density table displaying all 10 active security rules, target collections, allowed roles, enforced conditions (`auth.uid == record.owner`), and enforcement state (`Active (Enforced)`).
-  2. **Interactive Policy Simulator**:
-     - Allows the Admin to select:
-       - *Actor*: Student (Alex), Organizer (Priya), Admin (Dean), or Anonymous Guest
-       - *Action*: View Attendee Emails, Approve Booking, Book Venue, Cancel Registration, etc.
-       - *Target*: Specific event or registration
-     - Instantly evaluates against the backend RLS rule engine and outputs `ALLOWED` (green) or `DENIED` (crimson) with the exact failing predicate.
-  3. **Live Security Audit Log**: Displays recent policy evaluation events with timestamps, requesting persona, target collection, action, and outcome.
+### Key Changes
+- In `src/components/Header.tsx`:
+  - Conditionally suppress the top demo bar (`bg-slate-900`) whenever `currentUser?.role === 'Student'` (or when a user is logged in).
+  - Ensure the navigation bar displays only tabs permitted for the active role:
+    - `Student`: `Browse Events`, `Venues Directory`, `My Registrations`.
+    - `Organizer`: `Browse Events`, `Venues Directory`, `Organizer Portal`.
+    - `Admin`: `Browse Events`, `Venues Directory`, `Admin Queue`.
+- In `src/App.tsx`:
+  - Default the initial load to an unauthenticated guest or authenticated student without rendering intrusive demo switcher buttons.
+  - When a student is active, ensure `activeTab` cannot switch to `organizer` or `admin`.
 
 ---
 
-## 4. Key Product Decisions & Trade-Offs
+## 3. Technical Architecture & Security Enforcement
 
-- **Decision 1: Server-Side Query & Mutation RLS Middleware**
-  - *Chosen Approach*: RLS is enforced at the controller and database adapter layer in Express. Even if a user attempts to manually forge a REST request (e.g., passing another user's ID or querying another organizer's pending events), the server rejects it with a strict `403 Forbidden`.
-  - *Why*: Eliminates security vulnerabilities and cross-tenant data leaks.
+- **Client-Side Guard**: The tab router prevents rendering `<OrganizerPortal>` or `<AdminPortal>` if `currentUser?.role` does not match the required privileges.
+- **Backend RLS Guard (Defense-in-Depth)**: Even if a client attempts to forge an API call to `/api/events` (create), `/api/admin/events/:id` (approval), or `/api/venues` (create venue), the Express Row-Level Security middleware intercepts the request and returns a strict `403 Forbidden: Access restricted to [Admin/Organizer] roles`.
 
-- **Decision 2: Automatic Query Scoping (Defense in Depth)**
-  - *Chosen Approach*: Rather than relying solely on client parameters, endpoints like `/api/events/my-events` and `/api/users/registrations` extract the identity strictly from the verified session context (`auth.uid`), completely preventing parameter tampering.
+---
 
-- **Decision 3: Zero Disruption to Existing Flow**
-  - *Chosen Approach*: Legitimate actions for Students, Organizers, and Admins operate without additional friction, while unauthorized actions (e.g. student attempting to approve events or view private attendee emails) are strictly intercepted.
+## 4. Verification Plan
+
+1. Log in as a Student (`alex.student@campus.edu`):
+   - Verify the top demo switcher bar is completely gone.
+   - Verify no "Organizer" or "Admin" buttons appear in the top bar or header navigation.
+   - Verify only "Browse Events", "Venues Directory", and "My Registrations" are visible.
+2. Sign out and sign in as Organizer:
+   - Verify the Organizer Portal is available.
+3. Sign out and sign in as Admin:
+   - Verify the Admin Queue and RLS Security Console are available.
+4. Verify all compilation and tests pass cleanly.

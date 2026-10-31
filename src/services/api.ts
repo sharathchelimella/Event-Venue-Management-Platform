@@ -73,6 +73,7 @@ export const api = {
       storage.setUser(res.user);
       return res.user;
     } catch {
+      storage.setUser(null);
       return null;
     }
   },
@@ -163,11 +164,16 @@ export const api = {
     });
   },
 
-  async getMyRegistrations(): Promise<{ _id: string; createdAt: string; event: IEvent }[]> {
-    const res = await apiRequest<{ registrations: { _id: string; createdAt: string; event: IEvent }[] }>(
-      '/api/users/registrations'
-    );
-    return res.registrations;
+  async getMyRegistrations(userId?: string): Promise<{ _id: string; createdAt: string; event: IEvent }[]> {
+    try {
+      const res = await apiRequest<{ registrations: { _id: string; createdAt: string; event: IEvent }[] }>(
+        '/api/users/registrations',
+        userId ? { headers: { 'x-user-id': userId } } : {}
+      );
+      return res.registrations || [];
+    } catch {
+      return [];
+    }
   },
 
   async getAttendees(eventId: string): Promise<{ name: string; email: string; registeredAt: string }[]> {

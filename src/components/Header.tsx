@@ -23,54 +23,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
-      {/* Demo Persona Quick-Switcher Bar */}
-      <div className="bg-slate-900 text-slate-200 text-xs py-2 px-4 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-white tracking-wide flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Demo Role Quick-Switch:
-            </span>
-            <span className="text-slate-400">
-              Active: <strong className="text-white font-medium">{currentUser ? `${currentUser.name} (${currentUser.role})` : 'Guest'}</strong>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onDemoSwitch('Student')}
-              className={`px-2.5 py-1 rounded transition-colors whitespace-nowrap shrink-0 ${
-                currentUser?.role === 'Student'
-                  ? 'bg-white text-slate-950 font-semibold shadow-xs'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Student (Alex)
-            </button>
-            <button
-              onClick={() => onDemoSwitch('Organizer')}
-              className={`px-2.5 py-1 rounded transition-colors whitespace-nowrap shrink-0 ${
-                currentUser?.role === 'Organizer'
-                  ? 'bg-white text-slate-950 font-semibold shadow-xs'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Organizer (Priya)
-            </button>
-            <button
-              onClick={() => onDemoSwitch('Admin')}
-              className={`px-2.5 py-1 rounded transition-colors whitespace-nowrap shrink-0 ${
-                currentUser?.role === 'Admin'
-                  ? 'bg-white text-slate-950 font-semibold shadow-xs'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Admin (Dean Office)
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Main Top Bar Contract: 3 Zones */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-8">

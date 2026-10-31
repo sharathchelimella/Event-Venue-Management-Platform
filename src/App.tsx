@@ -69,12 +69,13 @@ export default function App() {
     }
     setLoadingRegistrations(true);
     try {
-      const data = await api.getMyRegistrations();
+      const data = await api.getMyRegistrations(userId);
       setMyRegistrations(data);
       const ids = new Set(data.map((r) => (typeof r.event === 'object' ? r.event._id : (r.event as string))));
       setRegisteredEventIds(ids);
-    } catch (err: any) {
-      console.error('Failed to load registrations', err);
+    } catch {
+      setMyRegistrations([]);
+      setRegisteredEventIds(new Set());
     } finally {
       setLoadingRegistrations(false);
     }
@@ -85,8 +86,8 @@ export default function App() {
     try {
       const data = await api.getMyEvents();
       setMyEvents(data);
-    } catch (err: any) {
-      console.error('Failed to load my events', err);
+    } catch {
+      setMyEvents([]);
     }
   }, []);
 
@@ -95,8 +96,8 @@ export default function App() {
     try {
       const data = await api.getPendingEvents();
       setPendingEvents(data);
-    } catch (err: any) {
-      console.error('Failed to load pending events', err);
+    } catch {
+      setPendingEvents([]);
     }
   }, []);
 
@@ -108,6 +109,16 @@ export default function App() {
 
       // Check existing session or default to Student demo
       let user = storage.getUser();
+      if (user) {
+        // Validate with server that this user ID exists
+        const verified = await api.getMe();
+        if (!verified) {
+          user = null;
+        } else {
+          user = verified;
+        }
+      }
+
       if (!user) {
         try {
           user = await api.demoSwitch('Student');
@@ -118,7 +129,7 @@ export default function App() {
 
       if (user) {
         setCurrentUser(user);
-        refreshRegistrations(user._id);
+        await refreshRegistrations(user._id);
         if (user.role === 'Organizer' || user.role === 'Admin') {
           refreshMyEvents();
         }
@@ -198,6 +209,18 @@ export default function App() {
     }
   };
 
+  const handleSelectTab = (tab: string) => {
+    if (tab === 'organizer' && currentUser?.role !== 'Organizer' && currentUser?.role !== 'Admin') {
+      setActiveTab('feed');
+      return;
+    }
+    if (tab === 'admin' && currentUser?.role !== 'Admin') {
+      setActiveTab('feed');
+      return;
+    }
+    setActiveTab(tab);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
       {/* Toast Notifications */}
@@ -225,7 +248,7 @@ export default function App() {
       <Header
         currentUser={currentUser}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleSelectTab}
         onOpenAuth={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
         onDemoSwitch={handleDemoSwitch}
@@ -252,15 +275,13 @@ export default function App() {
             onRequestBooking={() => {
               if (currentUser?.role === 'Organizer' || currentUser?.role === 'Admin') {
                 setActiveTab('organizer');
-              } else {
-                handleDemoSwitch('Organizer');
               }
             }}
-            canBook={true}
+            canBook={currentUser?.role === 'Organizer' || currentUser?.role === 'Admin'}
           />
         )}
 
-        {activeTab === 'my-registrations' && (
+        {activeTab === 'my-registrations' && currentUser?.role === 'Student' && (
           <MyRegistrations
             registrations={myRegistrations}
             onCancelRegistration={handleCancelRegistration}
@@ -269,7 +290,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'organizer' && (
+        {activeTab === 'organizer' && (currentUser?.role === 'Organizer' || currentUser?.role === 'Admin') && (
           <OrganizerPortal
             venues={venues}
             myEvents={myEvents}
@@ -278,7 +299,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'admin' && (
+        {activeTab === 'admin' && currentUser?.role === 'Admin' && (
           <AdminPortal
             pendingEvents={pendingEvents}
             venues={venues}

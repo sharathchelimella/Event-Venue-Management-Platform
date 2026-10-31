@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
 import { api } from '../services/api.ts';
 import { IEvent, IVenue, EventCategory } from '../types/index.ts';
-import { Calendar, Clock, AlertTriangle, CheckCircle, Users, PlusCircle, AlertCircle, MapPin } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  Users,
+  PlusCircle,
+  AlertCircle,
+  MapPin,
+  CheckCircle2,
+  ChevronRight,
+  UserCheck,
+} from 'lucide-react';
 import { AttendeeModal } from './AttendeeModal.tsx';
 
 interface OrganizerPortalProps {
@@ -35,6 +47,13 @@ export const OrganizerPortal: React.FC<OrganizerPortalProps> = ({
     selectedVenue.booked_dates &&
     eventDate &&
     selectedVenue.booked_dates.includes(eventDate);
+
+  // Compute attendee and program statistics
+  const totalRegisteredAttendees = myEvents
+    .filter((e) => e.status === 'Approved')
+    .reduce((sum, e) => sum + (e.registered_count || 0), 0);
+  const approvedPrograms = myEvents.filter((e) => e.status === 'Approved');
+  const pendingPrograms = myEvents.filter((e) => e.status === 'Pending');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,12 +104,61 @@ export const OrganizerPortal: React.FC<OrganizerPortalProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Top Banner */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Organizer Management Portal</h2>
-        <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
-          Request campus facilities for hackathons, seminars, standup shows, and workshops. All requests run through automated conflict detection to prevent double-booking. Once approved by administration, events publish automatically to the public student discovery feed.
-        </p>
+      {/* Top Banner & KPI Summary Cards */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Organizer Management Portal</h2>
+          <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+            Monitor real-time attendee registrations for your programs, view student rosters with contact info, and submit new venue booking requests with conflict prevention.
+          </p>
+        </div>
+
+        {/* KPI Strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t border-slate-100">
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <UserCheck className="w-4 h-4 text-emerald-600" />
+              <span>Total Registered Users</span>
+            </div>
+            <div className="text-2xl font-bold font-mono text-slate-900 mt-1 tabular-nums">
+              {totalRegisteredAttendees}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">Across all approved programs</p>
+          </div>
+
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <CheckCircle className="w-4 h-4 text-slate-700" />
+              <span>Approved Programs</span>
+            </div>
+            <div className="text-2xl font-bold font-mono text-slate-900 mt-1 tabular-nums">
+              {approvedPrograms.length}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">Live on public feed</p>
+          </div>
+
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <Clock className="w-4 h-4 text-amber-600" />
+              <span>Pending Review</span>
+            </div>
+            <div className="text-2xl font-bold font-mono text-slate-900 mt-1 tabular-nums">
+              {pendingPrograms.length}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">Awaiting admin decision</p>
+          </div>
+
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <Calendar className="w-4 h-4 text-slate-700" />
+              <span>Total Programs</span>
+            </div>
+            <div className="text-2xl font-bold font-mono text-slate-900 mt-1 tabular-nums">
+              {myEvents.length}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">Created by your club</p>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -225,17 +293,17 @@ export const OrganizerPortal: React.FC<OrganizerPortalProps> = ({
           </form>
         </div>
 
-        {/* Right Column: My Submitted Events & Status Table (7 cols) */}
+        {/* Right Column: My Submitted Events & Attendees Management (7 cols) */}
         <div className="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">My Submitted Event Requests</h3>
+              <h3 className="text-sm font-bold text-slate-900">My Programs & Registered Users</h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Real-time booking workflow status and attendee management.
+                Check user registration numbers and view detailed attendee rosters for each program.
               </p>
             </div>
             <span className="text-xs font-mono tabular-nums text-slate-500">
-              {myEvents.length} request{myEvents.length === 1 ? '' : 's'}
+              {myEvents.length} program{myEvents.length === 1 ? '' : 's'}
             </span>
           </div>
 
@@ -244,72 +312,103 @@ export const OrganizerPortal: React.FC<OrganizerPortalProps> = ({
               You haven't submitted any event requests yet. Use the booking form on the left to request your first venue.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 font-semibold">
-                    <th className="py-2.5 px-3">Event & Category</th>
-                    <th className="py-2.5 px-3">Venue</th>
-                    <th className="py-2.5 px-3">Date</th>
-                    <th className="py-2.5 px-3">Status</th>
-                    <th className="py-2.5 px-3 text-right">Roster</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {myEvents.map((event) => {
-                    const venue =
-                      typeof event.venue_id === 'object' ? event.venue_id : null;
-                    const maxCap = venue ? venue.max_capacity : 0;
+            <div className="space-y-3">
+              {myEvents.map((event) => {
+                const venue =
+                  typeof event.venue_id === 'object' ? event.venue_id : null;
+                const maxCap = venue ? venue.max_capacity : 0;
+                const registered = event.registered_count || 0;
+                const percent = maxCap > 0 ? Math.min(100, Math.round((registered / maxCap) * 100)) : 0;
 
-                    return (
-                      <tr key={event._id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3 px-3">
-                          <div className="font-semibold text-slate-900 max-w-xs truncate">{event.title}</div>
-                          <div className="text-[11px] text-slate-500">{event.category}</div>
-                        </td>
-                        <td className="py-3 px-3 text-slate-700">
-                          {venue?.venue_name || 'Venue'}
-                        </td>
-                        <td className="py-3 px-3 font-mono text-slate-600 tabular-nums">
-                          {event.event_date}
-                        </td>
-                        <td className="py-3 px-3">
-                          {event.status === 'Approved' && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              Approved
-                            </span>
-                          )}
-                          {event.status === 'Pending' && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                              Pending Review
-                            </span>
-                          )}
-                          {event.status === 'Rejected' && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                              Rejected
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          {event.status === 'Approved' ? (
-                            <button
-                              onClick={() => setSelectedRosterEvent(event)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded transition-colors"
-                            >
-                              <Users className="w-3 h-3" />
-                              <span className="font-mono tabular-nums">{event.registered_count}</span>
-                              <span className="text-slate-400">/</span>
-                              <span className="font-mono tabular-nums text-slate-500">{maxCap}</span>
-                            </button>
-                          ) : (
-                            <span className="text-slate-400 text-[11px]">N/A</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                return (
+                  <div
+                    key={event._id}
+                    className="border border-slate-200 rounded-xl p-4 hover:border-slate-300 transition-colors bg-white shadow-2xs space-y-3"
+                  >
+                    {/* Top Row: Title, Category, Status Badge */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                          <span className="font-semibold text-slate-900">{event.category}</span>
+                          <span>·</span>
+                          <span className="font-mono tabular-nums">{event.event_date}</span>
+                          <span>·</span>
+                          <span>{venue?.venue_name || 'Campus Venue'}</span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900">{event.title}</h4>
+                      </div>
+
+                      <div className="shrink-0">
+                        {event.status === 'Approved' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Approved & Live
+                          </span>
+                        )}
+                        {event.status === 'Pending' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            <Clock className="w-3.5 h-3.5" />
+                            Pending Review
+                          </span>
+                        )}
+                        {event.status === 'Rejected' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            Rejected
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: How Many Registered & Action Button to View Who They Are */}
+                    <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1.5 flex-1 max-w-xs">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-600 font-medium flex items-center gap-1">
+                            <Users className="w-3.5 h-3.5 text-slate-400" />
+                            Registered Users:
+                          </span>
+                          <span className="font-mono tabular-nums font-bold text-slate-900">
+                            {registered} / {maxCap} Seats ({percent}%)
+                          </span>
+                        </div>
+
+                        {/* Capacity meter */}
+                        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              percent >= 100
+                                ? 'bg-rose-600'
+                                : percent > 75
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-600'
+                            }`}
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Who Are They button */}
+                      <div>
+                        {event.status === 'Approved' ? (
+                          <button
+                            onClick={() => setSelectedRosterEvent(event)}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 rounded-lg transition-colors shadow-2xs"
+                          >
+                            <Users className="w-3.5 h-3.5" />
+                            <span>View Registered Users ({registered})</span>
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">
+                            Registrations open upon Admin approval
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

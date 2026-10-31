@@ -318,10 +318,13 @@ apiRouter.post('/events', requireRole(['Organizer', 'Admin']), async (req: Reque
 });
 
 // GET /api/events/my-events (RLS: Organizer can only view their own submissions)
-apiRouter.get('/events/my-events', requireRole(['Organizer', 'Admin']), async (req: Request, res: Response) => {
+apiRouter.get('/events/my-events', async (req: Request, res: Response) => {
   try {
+    if (!req.auth || (req.auth.role !== 'Organizer' && req.auth.role !== 'Admin')) {
+      return res.json({ events: [] });
+    }
     // RLS: Scoped strictly to authenticated user's ID
-    const userId = req.auth!.uid;
+    const userId = req.auth.uid;
     const events = await db.findOrganizerEvents(userId);
     return res.json({ events });
   } catch (err: any) {
@@ -330,8 +333,11 @@ apiRouter.get('/events/my-events', requireRole(['Organizer', 'Admin']), async (r
 });
 
 // GET /api/admin/events/pending (RLS Guard: Admin only)
-apiRouter.get('/admin/events/pending', requireRole(['Admin']), async (_req: Request, res: Response) => {
+apiRouter.get('/admin/events/pending', async (req: Request, res: Response) => {
   try {
+    if (!req.auth || req.auth.role !== 'Admin') {
+      return res.json({ events: [] });
+    }
     const events = await db.findPendingEvents();
     return res.json({ events });
   } catch (err: any) {
@@ -433,9 +439,12 @@ apiRouter.delete('/events/:id/register', requireAuth, async (req: Request, res: 
 });
 
 // GET /api/users/registrations (RLS: Student can only view their own passes)
-apiRouter.get('/users/registrations', requireAuth, async (req: Request, res: Response) => {
+apiRouter.get('/users/registrations', async (req: Request, res: Response) => {
   try {
-    const userId = req.auth!.uid;
+    if (!req.auth) {
+      return res.json({ registrations: [] });
+    }
+    const userId = req.auth.uid;
     const registrations = await db.getUserRegistrations(userId);
     return res.json({ registrations });
   } catch (err: any) {
