@@ -1,0 +1,29 @@
+DatasetTier,RecordCount,Operation,ExecutionPlan,ColdExecMs,WarmMinMs,WarmMeanMs,WarmP50Ms,WarmP90Ms,WarmP95Ms,WarmP99Ms,WarmMaxMs,IndexedP50Ms,SpeedupFactor
+Small,1000,Fetch Approved Events (N+1 Populate + Sort),O(N) Filter -> N*2 Array Scans -> Quicksort,2.600,0.064,0.243,0.132,0.348,0.429,1.784,1.797,0.035,3.7x
+Small,1000,"Fetch Events by Category (""Hackathon"")",O(N) Full Array Scan,0.114,0.036,0.039,0.037,0.042,0.045,0.063,0.068,0.000,106.5x
+Small,1000,Fetch Event Details by ID (Point Lookup),O(N) Array.prototype.find,0.098,0.011,0.023,0.024,0.033,0.039,0.057,0.063,0.000,53.5x
+Small,1000,Fetch Venues with Booked Dates (Nested Scan),O(V * E) Nested Loop Full Scan,0.664,0.167,0.273,0.320,0.342,0.375,0.482,0.566,0.016,19.4x
+Small,1000,Fetch Venue by ID,O(V) Venue Array Scan,0.060,0.000,0.001,0.000,0.001,0.002,0.006,0.007,0.000,2.0x
+Small,1000,Fetch User's Registrations (Passbook),O(R) Filter -> O(E) Event Find -> Populate,0.554,0.096,0.114,0.103,0.131,0.164,0.253,0.259,0.009,11.6x
+Small,1000,Count Registrations for Event,O(R) Filter Array Length,0.089,0.012,0.020,0.012,0.030,0.035,0.044,0.049,0.000,53.5x
+Medium,10000,Fetch Approved Events (N+1 Populate + Sort),O(N) Filter -> N*2 Array Scans -> Quicksort,0.635,0.254,0.557,0.481,0.820,0.902,2.910,4.608,0.030,16.0x
+Medium,10000,"Fetch Events by Category (""Hackathon"")",O(N) Full Array Scan,0.357,0.124,0.142,0.134,0.168,0.192,0.279,0.280,0.000,409.9x
+Medium,10000,Fetch Event Details by ID (Point Lookup),O(N) Array.prototype.find,0.306,0.135,0.149,0.140,0.157,0.193,0.260,0.263,0.000,337.5x
+Medium,10000,Fetch Venues with Booked Dates (Nested Scan),O(V * E) Nested Loop Full Scan,2.723,1.803,2.687,2.855,2.999,3.034,3.212,3.318,0.006,464.6x
+Medium,10000,Fetch Venue by ID,O(V) Venue Array Scan,0.003,0.000,0.000,0.000,0.000,0.000,0.001,0.001,0.000,1.9x
+Medium,10000,Fetch User's Registrations (Passbook),O(R) Filter -> O(E) Event Find -> Populate,2.104,1.069,1.161,1.119,1.271,1.321,1.554,1.636,0.002,472.1x
+Medium,10000,Count Registrations for Event,O(R) Filter Array Length,0.338,0.126,0.151,0.141,0.182,0.194,0.276,0.301,0.000,557.7x
+Large,100000,Fetch Approved Events (N+1 Populate + Sort),O(N) Filter -> N*2 Array Scans -> Quicksort,5.881,4.210,5.097,4.694,5.199,5.948,14.019,16.832,0.023,206.0x
+Large,100000,"Fetch Events by Category (""Hackathon"")",O(N) Full Array Scan,3.053,1.663,1.907,1.825,2.072,2.252,2.918,3.398,0.000,6849.7x
+Large,100000,Fetch Event Details by ID (Point Lookup),O(N) Array.prototype.find,3.138,1.423,1.589,1.544,1.634,1.850,2.588,2.850,0.000,4184.9x
+Large,100000,Fetch Venues with Booked Dates (Nested Scan),O(V * E) Nested Loop Full Scan,32.436,28.869,30.959,30.971,32.574,32.784,33.278,33.422,0.006,5255.0x
+Large,100000,Fetch Venue by ID,O(V) Venue Array Scan,0.004,0.000,0.000,0.000,0.000,0.000,0.001,0.001,0.000,2.1x
+Large,100000,Fetch User's Registrations (Passbook),O(R) Filter -> O(E) Event Find -> Populate,20.236,14.203,15.490,15.463,16.220,16.526,17.251,17.553,0.002,6509.3x
+Large,100000,Count Registrations for Event,O(R) Filter Array Length,2.861,1.371,1.534,1.507,1.606,1.658,2.219,2.521,0.000,7496.6x
+Very Large,1000000,Fetch Approved Events (N+1 Populate + Sort),O(N) Filter -> N*2 Array Scans -> Quicksort,Omitted,N/A,N/A,N/A,N/A,N/A,N/A,N/A,0.024,Mandatory
+Very Large,1000000,"Fetch Events by Category (""Hackathon"")",O(N) Full Array Scan,38.312,37.368,41.912,40.024,47.571,52.842,57.059,58.113,0.000,132749.4x
+Very Large,1000000,Fetch Event Details by ID (Point Lookup),O(N) Array.prototype.find,34.007,32.882,33.475,33.405,33.886,34.036,34.156,34.186,0.000,85984.0x
+Very Large,1000000,Fetch Venues with Booked Dates (Nested Scan),O(V * E) Nested Loop Full Scan,Omitted,N/A,N/A,N/A,N/A,N/A,N/A,N/A,0.006,Mandatory
+Very Large,1000000,Fetch Venue by ID,O(V) Venue Array Scan,0.003,0.000,0.000,0.000,0.000,0.000,0.001,0.001,0.000,2.2x
+Very Large,1000000,Fetch User's Registrations (Passbook),O(R) Filter -> O(E) Event Find -> Populate,18.575,15.213,15.934,15.733,16.772,17.168,17.484,17.563,0.001,22523.7x
+Very Large,1000000,Count Registrations for Event,O(R) Filter Array Length,5.051,3.528,3.950,3.814,4.203,4.556,4.838,4.908,0.000,23688.2x

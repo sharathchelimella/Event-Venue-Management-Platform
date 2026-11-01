@@ -1,0 +1,858 @@
+{
+  "system": {
+    "timestamp": "2026-11-01T18:41:48.253Z",
+    "nodeVersion": "v22.23.4",
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 2,
+    "totalMemoryMb": 4096,
+    "freeMemoryMb": 2492
+  },
+  "config": {
+    "requestedSize": "all",
+    "iterations": 50,
+    "quickMode": false,
+    "engine": "CampusMongoEngine (Embedded High-Integrity In-Memory Mongoose Store)",
+    "persistenceFile": ".campus_data.json"
+  },
+  "results": [
+    {
+      "datasetTier": "Small",
+      "recordCount": 1000,
+      "operationId": "findApprovedEvents",
+      "operationName": "Fetch Approved Events (N+1 Populate + Sort)",
+      "plan": "O(N) Filter -> N*2 Array Scans -> Quicksort",
+      "indexedPlan": "O(1) Status Map -> O(1) Venue/User Maps -> Quicksort",
+      "coldMs": 2.600498,
+      "unindexed": {
+        "count": 50,
+        "min": 0.063616,
+        "mean": 0.24285597999999994,
+        "p50": 0.1315935,
+        "p90": 0.3482283,
+        "p95": 0.42873574999999964,
+        "p99": 1.78351467,
+        "max": 1.796508
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.034711,
+        "mean": 0.04161872,
+        "p50": 0.0354055,
+        "p90": 0.046515600000000004,
+        "p95": 0.055470949999999956,
+        "p99": 0.1315254199999999,
+        "max": 0.155164
+      },
+      "speedup": "3.7x"
+    },
+    {
+      "datasetTier": "Small",
+      "recordCount": 1000,
+      "operationId": "findEventsByCategory",
+      "operationName": "Fetch Events by Category (\"Hackathon\")",
+      "plan": "O(N) Full Array Scan",
+      "indexedPlan": "O(1) Category Hash Map Lookup",
+      "coldMs": 0.114253,
+      "unindexed": {
+        "count": 50,
+        "min": 0.036079,
+        "mean": 0.03889717999999999,
+        "p50": 0.036842,
+        "p90": 0.041527800000000004,
+        "p95": 0.0451547,
+        "p99": 0.06333324999999998,
+        "max": 0.068123
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000304,
+        "mean": 0.0006465399999999999,
+        "p50": 0.000346,
+        "p90": 0.0005073000000000001,
+        "p95": 0.0018035999999999946,
+        "p99": 0.006003819999999991,
+        "max": 0.007955
+      },
+      "speedup": "106.5x"
+    },
+    {
+      "datasetTier": "Small",
+      "recordCount": 1000,
+      "operationId": "findEventById",
+      "operationName": "Fetch Event Details by ID (Point Lookup)",
+      "plan": "O(N) Array.prototype.find",
+      "indexedPlan": "O(1) Hash Map.get(id)",
+      "coldMs": 0.097854,
+      "unindexed": {
+        "count": 50,
+        "min": 0.010553,
+        "mean": 0.022980319999999995,
+        "p50": 0.024114,
+        "p90": 0.033163,
+        "p95": 0.039057049999999996,
+        "p99": 0.056884149999999974,
+        "max": 0.063286
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000421,
+        "mean": 0.00064662,
+        "p50": 0.000451,
+        "p90": 0.0007525,
+        "p95": 0.0009987999999999991,
+        "p99": 0.003923209999999993,
+        "max": 0.005624
+      },
+      "speedup": "53.5x"
+    },
+    {
+      "datasetTier": "Small",
+      "recordCount": 1000,
+      "operationId": "findVenues",
+      "operationName": "Fetch Venues with Booked Dates (Nested Scan)",
+      "plan": "O(V * E) Nested Loop Full Scan",
+      "indexedPlan": "O(V) Pre-aggregated Set Lookup",
+      "coldMs": 0.664383,
+      "unindexed": {
+        "count": 50,
+        "min": 0.166799,
+        "mean": 0.27311250000000004,
+        "p50": 0.3204405,
+        "p90": 0.3415484,
+        "p95": 0.37517795,
+        "p99": 0.4816809299999997,
+        "max": 0.566178
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.010133,
+        "mean": 0.016682699999999998,
+        "p50": 0.016481,
+        "p90": 0.018334,
+        "p95": 0.01952095,
+        "p99": 0.024586599999999997,
+        "max": 0.025449
+      },
+      "speedup": "19.4x"
+    },
+    {
+      "datasetTier": "Small",
+      "recordCount": 1000,
+      "operationId": "findVenueById",
+      "operationName": "Fetch Venue by ID",
+      "plan": "O(V) Venue Array Scan",
+      "indexedPlan": "O(1) Venue Map.get(id)",
+      "coldMs": 0.06038,
+      "unindexed": {
+        "count": 50,
+        "min": 0.00039,
+        "mean": 0.0007325599999999998,
+        "p50": 0.0004385,
+        "p90": 0.0006429000000000004,
+        "p95": 0.002386849999999996,
+        "p99": 0.005638539999999996,
+        "max": 0.006743
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000206,
+        "mean": 0.00058586,
+        "p50": 0.00022150000000000002,
+        "p90": 0.0003130000000000001,
+        "p95": 0.0018639499999999927,
+        "p99": 0.0075504099999999935,
+        "max": 0.009114
+      },
+      "speedup": "2.0x"
+    },
+    {
+      "datasetTier": "Small",
+      "recordCount": 1000,
+      "operationId": "getUserRegistrations",
+      "operationName": "Fetch User's Registrations (Passbook)",
+      "plan": "O(R) Filter -> O(E) Event Find -> Populate",
+      "indexedPlan": "O(1) User Reg Map -> O(1) Event Map",
+      "coldMs": 0.554425,
+      "unindexed": {
+        "count": 50,
+        "min": 0.095612,
+        "mean": 0.11442564,
+        "p50": 0.1034815,
+        "p90": 0.13050730000000002,
+        "p95": 0.16382444999999995,
+        "p99": 0.25330391999999996,
+        "max": 0.258543
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.002584,
+        "mean": 0.0070668799999999985,
+        "p50": 0.008949,
+        "p90": 0.0093947,
+        "p95": 0.011074949999999993,
+        "p99": 0.016598689999999992,
+        "max": 0.018323
+      },
+      "speedup": "11.6x"
+    },
+    {
+      "datasetTier": "Small",
+      "recordCount": 1000,
+      "operationId": "countRegistrations",
+      "operationName": "Count Registrations for Event",
+      "plan": "O(R) Filter Array Length",
+      "indexedPlan": "O(1) Event Reg Map Array Length",
+      "coldMs": 0.089481,
+      "unindexed": {
+        "count": 50,
+        "min": 0.012185,
+        "mean": 0.01984786,
+        "p50": 0.0123165,
+        "p90": 0.030409600000000002,
+        "p95": 0.03456095,
+        "p99": 0.04377264999999998,
+        "max": 0.049072
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000219,
+        "mean": 0.0015040599999999998,
+        "p50": 0.00023,
+        "p90": 0.0003373,
+        "p95": 0.0004603499999999997,
+        "p99": 0.032106429999999894,
+        "max": 0.058073
+      },
+      "speedup": "53.5x"
+    },
+    {
+      "datasetTier": "Medium",
+      "recordCount": 10000,
+      "operationId": "findApprovedEvents",
+      "operationName": "Fetch Approved Events (N+1 Populate + Sort)",
+      "plan": "O(N) Filter -> N*2 Array Scans -> Quicksort",
+      "indexedPlan": "O(1) Status Map -> O(1) Venue/User Maps -> Quicksort",
+      "coldMs": 0.634652,
+      "unindexed": {
+        "count": 50,
+        "min": 0.253577,
+        "mean": 0.5570439799999999,
+        "p50": 0.4813985,
+        "p90": 0.8199116,
+        "p95": 0.9015344,
+        "p99": 2.909547569999993,
+        "max": 4.607793
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.02812,
+        "mean": 0.14537372,
+        "p50": 0.0301395,
+        "p90": 0.04976650000000004,
+        "p95": 0.08692489999999997,
+        "p99": 2.8440125199999895,
+        "max": 5.403259
+      },
+      "speedup": "16.0x"
+    },
+    {
+      "datasetTier": "Medium",
+      "recordCount": 10000,
+      "operationId": "findEventsByCategory",
+      "operationName": "Fetch Events by Category (\"Hackathon\")",
+      "plan": "O(N) Full Array Scan",
+      "indexedPlan": "O(1) Category Hash Map Lookup",
+      "coldMs": 0.356502,
+      "unindexed": {
+        "count": 50,
+        "min": 0.124409,
+        "mean": 0.14247146000000005,
+        "p50": 0.134029,
+        "p90": 0.16764360000000003,
+        "p95": 0.1920846,
+        "p99": 0.27852009,
+        "max": 0.280362
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000239,
+        "mean": 0.00033232,
+        "p50": 0.000327,
+        "p90": 0.00044740000000000003,
+        "p95": 0.0005731499999999997,
+        "p99": 0.0006498299999999999,
+        "max": 0.000666
+      },
+      "speedup": "409.9x"
+    },
+    {
+      "datasetTier": "Medium",
+      "recordCount": 10000,
+      "operationId": "findEventById",
+      "operationName": "Fetch Event Details by ID (Point Lookup)",
+      "plan": "O(N) Array.prototype.find",
+      "indexedPlan": "O(1) Hash Map.get(id)",
+      "coldMs": 0.306452,
+      "unindexed": {
+        "count": 50,
+        "min": 0.134621,
+        "mean": 0.14874621999999996,
+        "p50": 0.14007799999999998,
+        "p90": 0.1567238,
+        "p95": 0.19277824999999987,
+        "p99": 0.25969409,
+        "max": 0.2633
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000406,
+        "mean": 0.0004382,
+        "p50": 0.000415,
+        "p90": 0.00047650000000000004,
+        "p95": 0.0005838999999999996,
+        "p99": 0.0007271999999999998,
+        "max": 0.000786
+      },
+      "speedup": "337.5x"
+    },
+    {
+      "datasetTier": "Medium",
+      "recordCount": 10000,
+      "operationId": "findVenues",
+      "operationName": "Fetch Venues with Booked Dates (Nested Scan)",
+      "plan": "O(V * E) Nested Loop Full Scan",
+      "indexedPlan": "O(V) Pre-aggregated Set Lookup",
+      "coldMs": 2.723393,
+      "unindexed": {
+        "count": 50,
+        "min": 1.80258,
+        "mean": 2.6871803200000013,
+        "p50": 2.854876,
+        "p90": 2.9990368999999997,
+        "p95": 3.0339418,
+        "p99": 3.2123188299999996,
+        "max": 3.31842
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.00568,
+        "mean": 0.006485080000000001,
+        "p50": 0.006144999999999999,
+        "p90": 0.006773400000000001,
+        "p95": 0.00694675,
+        "p99": 0.013340429999999974,
+        "max": 0.019413
+      },
+      "speedup": "464.6x"
+    },
+    {
+      "datasetTier": "Medium",
+      "recordCount": 10000,
+      "operationId": "findVenueById",
+      "operationName": "Fetch Venue by ID",
+      "plan": "O(V) Venue Array Scan",
+      "indexedPlan": "O(1) Venue Map.get(id)",
+      "coldMs": 0.002653,
+      "unindexed": {
+        "count": 50,
+        "min": 0.000375,
+        "mean": 0.00040715999999999994,
+        "p50": 0.000392,
+        "p90": 0.0004601,
+        "p95": 0.0004815999999999999,
+        "p99": 0.0005545399999999999,
+        "max": 0.000581
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000196,
+        "mean": 0.00020598000000000006,
+        "p50": 0.000203,
+        "p90": 0.00021020000000000001,
+        "p95": 0.00022285,
+        "p99": 0.0002675199999999999,
+        "max": 0.000293
+      },
+      "speedup": "1.9x"
+    },
+    {
+      "datasetTier": "Medium",
+      "recordCount": 10000,
+      "operationId": "getUserRegistrations",
+      "operationName": "Fetch User's Registrations (Passbook)",
+      "plan": "O(R) Filter -> O(E) Event Find -> Populate",
+      "indexedPlan": "O(1) User Reg Map -> O(1) Event Map",
+      "coldMs": 2.104067,
+      "unindexed": {
+        "count": 50,
+        "min": 1.068669,
+        "mean": 1.1612539199999998,
+        "p50": 1.118837,
+        "p90": 1.2713248,
+        "p95": 1.3205971,
+        "p99": 1.5540953599999998,
+        "max": 1.635698
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.002157,
+        "mean": 0.002991600000000001,
+        "p50": 0.0023699999999999997,
+        "p90": 0.0025169,
+        "p95": 0.0061536999999999824,
+        "p99": 0.015117149999999979,
+        "max": 0.020245
+      },
+      "speedup": "472.1x"
+    },
+    {
+      "datasetTier": "Medium",
+      "recordCount": 10000,
+      "operationId": "countRegistrations",
+      "operationName": "Count Registrations for Event",
+      "plan": "O(R) Filter Array Length",
+      "indexedPlan": "O(1) Event Reg Map Array Length",
+      "coldMs": 0.338097,
+      "unindexed": {
+        "count": 50,
+        "min": 0.126286,
+        "mean": 0.15076498000000002,
+        "p50": 0.141382,
+        "p90": 0.1821878,
+        "p95": 0.19384209999999996,
+        "p99": 0.2761305699999999,
+        "max": 0.300683
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000247,
+        "mean": 0.00026165999999999993,
+        "p50": 0.00025350000000000004,
+        "p90": 0.00027,
+        "p95": 0.00028385,
+        "p99": 0.00041339999999999953,
+        "max": 0.000531
+      },
+      "speedup": "557.7x"
+    },
+    {
+      "datasetTier": "Large",
+      "recordCount": 100000,
+      "operationId": "findApprovedEvents",
+      "operationName": "Fetch Approved Events (N+1 Populate + Sort)",
+      "plan": "O(N) Filter -> N*2 Array Scans -> Quicksort",
+      "indexedPlan": "O(1) Status Map -> O(1) Venue/User Maps -> Quicksort",
+      "coldMs": 5.881423,
+      "unindexed": {
+        "count": 50,
+        "min": 4.210375,
+        "mean": 5.0967315200000005,
+        "p50": 4.694173,
+        "p90": 5.199216099999999,
+        "p95": 5.947828199999999,
+        "p99": 14.018650799999989,
+        "max": 16.83178
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.021331,
+        "mean": 0.025959399999999997,
+        "p50": 0.0227825,
+        "p90": 0.0307182,
+        "p95": 0.03877364999999999,
+        "p99": 0.07928367999999986,
+        "max": 0.115479
+      },
+      "speedup": "206.0x"
+    },
+    {
+      "datasetTier": "Large",
+      "recordCount": 100000,
+      "operationId": "findEventsByCategory",
+      "operationName": "Fetch Events by Category (\"Hackathon\")",
+      "plan": "O(N) Full Array Scan",
+      "indexedPlan": "O(1) Category Hash Map Lookup",
+      "coldMs": 3.05303,
+      "unindexed": {
+        "count": 50,
+        "min": 1.663382,
+        "mean": 1.9067770200000005,
+        "p50": 1.8254375,
+        "p90": 2.0721296000000002,
+        "p95": 2.2516986,
+        "p99": 2.918180549999998,
+        "max": 3.398138
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000202,
+        "mean": 0.00029581999999999997,
+        "p50": 0.0002665,
+        "p90": 0.00043380000000000003,
+        "p95": 0.0004612,
+        "p99": 0.0005951999999999999,
+        "max": 0.000605
+      },
+      "speedup": "6849.7x"
+    },
+    {
+      "datasetTier": "Large",
+      "recordCount": 100000,
+      "operationId": "findEventById",
+      "operationName": "Fetch Event Details by ID (Point Lookup)",
+      "plan": "O(N) Array.prototype.find",
+      "indexedPlan": "O(1) Hash Map.get(id)",
+      "coldMs": 3.137602,
+      "unindexed": {
+        "count": 50,
+        "min": 1.423402,
+        "mean": 1.58932014,
+        "p50": 1.5442125,
+        "p90": 1.6343697000000001,
+        "p95": 1.8497776999999995,
+        "p99": 2.5882376099999993,
+        "max": 2.850344
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.00036,
+        "mean": 0.00039459999999999994,
+        "p50": 0.000369,
+        "p90": 0.00045379999999999997,
+        "p95": 0.00049965,
+        "p99": 0.0005698599999999998,
+        "max": 0.000612
+      },
+      "speedup": "4184.9x"
+    },
+    {
+      "datasetTier": "Large",
+      "recordCount": 100000,
+      "operationId": "findVenues",
+      "operationName": "Fetch Venues with Booked Dates (Nested Scan)",
+      "plan": "O(V * E) Nested Loop Full Scan",
+      "indexedPlan": "O(V) Pre-aggregated Set Lookup",
+      "coldMs": 32.436299,
+      "unindexed": {
+        "count": 50,
+        "min": 28.869246,
+        "mean": 30.959257100000006,
+        "p50": 30.970587000000002,
+        "p90": 32.574404200000004,
+        "p95": 32.783542000000004,
+        "p99": 33.27816543,
+        "max": 33.421928
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.005196,
+        "mean": 0.006190239999999999,
+        "p50": 0.005893499999999999,
+        "p90": 0.0065046999999999995,
+        "p95": 0.006877299999999999,
+        "p99": 0.01275058999999998,
+        "max": 0.017655
+      },
+      "speedup": "5255.0x"
+    },
+    {
+      "datasetTier": "Large",
+      "recordCount": 100000,
+      "operationId": "findVenueById",
+      "operationName": "Fetch Venue by ID",
+      "plan": "O(V) Venue Array Scan",
+      "indexedPlan": "O(1) Venue Map.get(id)",
+      "coldMs": 0.003904,
+      "unindexed": {
+        "count": 50,
+        "min": 0.000281,
+        "mean": 0.00032156,
+        "p50": 0.000301,
+        "p90": 0.000372,
+        "p95": 0.00043684999999999986,
+        "p99": 0.0005646,
+        "max": 0.000594
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000138,
+        "mean": 0.0001513599999999999,
+        "p50": 0.000146,
+        "p90": 0.0001577,
+        "p95": 0.00016854999999999998,
+        "p99": 0.0002510099999999997,
+        "max": 0.000325
+      },
+      "speedup": "2.1x"
+    },
+    {
+      "datasetTier": "Large",
+      "recordCount": 100000,
+      "operationId": "getUserRegistrations",
+      "operationName": "Fetch User's Registrations (Passbook)",
+      "plan": "O(R) Filter -> O(E) Event Find -> Populate",
+      "indexedPlan": "O(1) User Reg Map -> O(1) Event Map",
+      "coldMs": 20.235948,
+      "unindexed": {
+        "count": 50,
+        "min": 14.202554,
+        "mean": 15.490458360000005,
+        "p50": 15.4627485,
+        "p90": 16.2200241,
+        "p95": 16.5257215,
+        "p99": 17.250985379999996,
+        "max": 17.553138
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.002166,
+        "mean": 0.0026873400000000007,
+        "p50": 0.0023755,
+        "p90": 0.0027648,
+        "p95": 0.0028302499999999994,
+        "p99": 0.010176499999999995,
+        "max": 0.011818
+      },
+      "speedup": "6509.3x"
+    },
+    {
+      "datasetTier": "Large",
+      "recordCount": 100000,
+      "operationId": "countRegistrations",
+      "operationName": "Count Registrations for Event",
+      "plan": "O(R) Filter Array Length",
+      "indexedPlan": "O(1) Event Reg Map Array Length",
+      "coldMs": 2.860599,
+      "unindexed": {
+        "count": 50,
+        "min": 1.370803,
+        "mean": 1.5335420400000002,
+        "p50": 1.506812,
+        "p90": 1.6055219,
+        "p95": 1.6577878,
+        "p99": 2.218798349999999,
+        "max": 2.521268
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000189,
+        "mean": 0.00020876,
+        "p50": 0.000201,
+        "p90": 0.0002176,
+        "p95": 0.0002584,
+        "p99": 0.0003400099999999997,
+        "max": 0.000414
+      },
+      "speedup": "7496.6x"
+    },
+    {
+      "datasetTier": "Very Large",
+      "recordCount": 1000000,
+      "operationId": "findApprovedEvents",
+      "operationName": "Fetch Approved Events (N+1 Populate + Sort)",
+      "plan": "O(N) Filter -> N*2 Array Scans -> Quicksort",
+      "indexedPlan": "O(1) Status Map -> O(1) Venue/User Maps -> Quicksort",
+      "coldMs": -1,
+      "unindexed": {
+        "min": -1,
+        "mean": -1,
+        "p50": -1,
+        "p90": -1,
+        "p95": -1,
+        "p99": -1,
+        "max": -1
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.016868,
+        "mean": 0.02606144,
+        "p50": 0.0236535,
+        "p90": 0.031977800000000015,
+        "p95": 0.05253919999999998,
+        "p99": 0.09656753999999992,
+        "max": 0.115508
+      },
+      "speedup": "Mandatory"
+    },
+    {
+      "datasetTier": "Very Large",
+      "recordCount": 1000000,
+      "operationId": "findEventsByCategory",
+      "operationName": "Fetch Events by Category (\"Hackathon\")",
+      "plan": "O(N) Full Array Scan",
+      "indexedPlan": "O(1) Category Hash Map Lookup",
+      "coldMs": 38.311527,
+      "unindexed": {
+        "count": 10,
+        "min": 37.367724,
+        "mean": 41.91224749999999,
+        "p50": 40.023947500000006,
+        "p90": 47.57086029999999,
+        "p95": 52.84198614999999,
+        "p99": 57.058886830000006,
+        "max": 58.113112
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.00021,
+        "mean": 0.0003014799999999999,
+        "p50": 0.0003015,
+        "p90": 0.0004082,
+        "p95": 0.0004361999999999999,
+        "p99": 0.00048922,
+        "max": 0.0005
+      },
+      "speedup": "132749.4x"
+    },
+    {
+      "datasetTier": "Very Large",
+      "recordCount": 1000000,
+      "operationId": "findEventById",
+      "operationName": "Fetch Event Details by ID (Point Lookup)",
+      "plan": "O(N) Array.prototype.find",
+      "indexedPlan": "O(1) Hash Map.get(id)",
+      "coldMs": 34.006886,
+      "unindexed": {
+        "count": 10,
+        "min": 32.881778,
+        "mean": 33.47502579999999,
+        "p50": 33.4048,
+        "p90": 33.8858885,
+        "p95": 34.03574975,
+        "p99": 34.15563875,
+        "max": 34.185611
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000376,
+        "mean": 0.00041330000000000007,
+        "p50": 0.0003885,
+        "p90": 0.0004702,
+        "p95": 0.00048124999999999996,
+        "p99": 0.0007174499999999999,
+        "max": 0.000764
+      },
+      "speedup": "85984.0x"
+    },
+    {
+      "datasetTier": "Very Large",
+      "recordCount": 1000000,
+      "operationId": "findVenues",
+      "operationName": "Fetch Venues with Booked Dates (Nested Scan)",
+      "plan": "O(V * E) Nested Loop Full Scan",
+      "indexedPlan": "O(V) Pre-aggregated Set Lookup",
+      "coldMs": -1,
+      "unindexed": {
+        "min": -1,
+        "mean": -1,
+        "p50": -1,
+        "p90": -1,
+        "p95": -1,
+        "p99": -1,
+        "max": -1
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.005284,
+        "mean": 0.006416780000000002,
+        "p50": 0.005967999999999999,
+        "p90": 0.0067214000000000015,
+        "p95": 0.0091838,
+        "p99": 0.014464799999999986,
+        "max": 0.017738
+      },
+      "speedup": "Mandatory"
+    },
+    {
+      "datasetTier": "Very Large",
+      "recordCount": 1000000,
+      "operationId": "findVenueById",
+      "operationName": "Fetch Venue by ID",
+      "plan": "O(V) Venue Array Scan",
+      "indexedPlan": "O(1) Venue Map.get(id)",
+      "coldMs": 0.002547,
+      "unindexed": {
+        "count": 10,
+        "min": 0.000296,
+        "mean": 0.00035539999999999997,
+        "p50": 0.00031999999999999997,
+        "p90": 0.0004586,
+        "p95": 0.0004927999999999999,
+        "p99": 0.00052016,
+        "max": 0.000527
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.00014,
+        "mean": 0.00014983999999999996,
+        "p50": 0.000146,
+        "p90": 0.0001582,
+        "p95": 0.00017074999999999998,
+        "p99": 0.00022021999999999998,
+        "max": 0.000231
+      },
+      "speedup": "2.2x"
+    },
+    {
+      "datasetTier": "Very Large",
+      "recordCount": 1000000,
+      "operationId": "getUserRegistrations",
+      "operationName": "Fetch User's Registrations (Passbook)",
+      "plan": "O(R) Filter -> O(E) Event Find -> Populate",
+      "indexedPlan": "O(1) User Reg Map -> O(1) Event Map",
+      "coldMs": 18.574919,
+      "unindexed": {
+        "count": 10,
+        "min": 15.213065,
+        "mean": 15.934386799999999,
+        "p50": 15.732782,
+        "p90": 16.7721823,
+        "p95": 17.167648149999998,
+        "p99": 17.48402083,
+        "max": 17.563114
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000671,
+        "mean": 0.0009240000000000001,
+        "p50": 0.0006985,
+        "p90": 0.0009673,
+        "p95": 0.0011162,
+        "p99": 0.005142529999999985,
+        "max": 0.008917
+      },
+      "speedup": "22523.7x"
+    },
+    {
+      "datasetTier": "Very Large",
+      "recordCount": 1000000,
+      "operationId": "countRegistrations",
+      "operationName": "Count Registrations for Event",
+      "plan": "O(R) Filter Array Length",
+      "indexedPlan": "O(1) Event Reg Map Array Length",
+      "coldMs": 5.051097,
+      "unindexed": {
+        "count": 10,
+        "min": 3.528025,
+        "mean": 3.9496624999999996,
+        "p50": 3.8138005,
+        "p90": 4.2031524,
+        "p95": 4.555612199999999,
+        "p99": 4.837580040000001,
+        "max": 4.908072
+      },
+      "indexed": {
+        "count": 50,
+        "min": 0.000154,
+        "mean": 0.0001648,
+        "p50": 0.000161,
+        "p90": 0.000169,
+        "p95": 0.00017575,
+        "p99": 0.0002355099999999998,
+        "max": 0.000285
+      },
+      "speedup": "23688.2x"
+    }
+  ]
+}

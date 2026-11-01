@@ -1,0 +1,91 @@
+{
+  "system": {
+    "timestamp": "2026-11-01T18:35:26.202Z",
+    "nodeVersion": "v22.23.4",
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 2,
+    "totalMemoryMb": 4096,
+    "freeMemoryMb": 2482
+  },
+  "connection": {
+    "isRemote": false,
+    "connectMs": 0.25333
+  },
+  "ioBenchmarks": {
+    "inMemory": {
+      "coldDurationMs": 0.357186,
+      "warmAvgMs": 0.010575746000000009,
+      "warmMinMs": 0.001988,
+      "warmMaxMs": 0.335037
+    },
+    "persistentDisk": {
+      "saveAvgMs": 0.11330672000000001,
+      "saveMinMs": 0.073884,
+      "saveMaxMs": 0.417608,
+      "loadAvgMs": 0.06604906000000002,
+      "loadMinMs": 0.058364,
+      "loadMaxMs": 0.13842,
+      "dataFileSize": 4156
+    }
+  },
+  "indexBenchmarks": [
+    {
+      "datasetSize": 100,
+      "indexedAvgMs": 0.00025615999999999926,
+      "unindexedAvgMs": 0.003684576000000002,
+      "speedup": 14.4
+    },
+    {
+      "datasetSize": 1000,
+      "indexedAvgMs": 0.0002376340000000006,
+      "unindexedAvgMs": 0.019656437999999995,
+      "speedup": 82.7
+    },
+    {
+      "datasetSize": 5000,
+      "indexedAvgMs": 0.00014829000000000028,
+      "unindexedAvgMs": 0.09589953,
+      "speedup": 646.7
+    },
+    {
+      "datasetSize": 10000,
+      "indexedAvgMs": 0.00018313800000000036,
+      "unindexedAvgMs": 0.19415015800000002,
+      "speedup": 1060.1
+    }
+  ],
+  "runtime": {
+    "durationMs": 205.967673,
+    "cpu": {
+      "userMs": 190,
+      "systemMs": 20,
+      "totalMs": 210,
+      "percent": 101.95774751506757
+    },
+    "memory": {
+      "startHeapUsedMb": 17.833763122558594,
+      "endHeapUsedMb": 23.146560668945312,
+      "peakHeapUsedMb": 17.833763122558594,
+      "heapDeltaMb": 5.312797546386719,
+      "startRssMb": 96.43359375,
+      "endRssMb": 99.65625,
+      "peakRssMb": 96.43359375,
+      "externalMb": 20.81898784637451
+    },
+    "eventLoop": {
+      "utilizationPercent": 0,
+      "lagMinMs": 9223372036854.775,
+      "lagMeanMs": 0,
+      "lagP50Ms": 0.000511,
+      "lagP90Ms": 0.000511,
+      "lagP95Ms": 0.000511,
+      "lagP99Ms": 0.000511,
+      "lagMaxMs": 0
+    },
+    "gc": {
+      "count": 0,
+      "durationMs": 0
+    }
+  }
+}

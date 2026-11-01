@@ -1,0 +1,98 @@
+{
+  "system": {
+    "timestamp": "2026-11-01T18:35:49.562Z",
+    "nodeVersion": "v22.23.4",
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 2,
+    "totalMemoryMb": 4096,
+    "freeMemoryMb": 2488
+  },
+  "config": {
+    "durationSeconds": 15,
+    "concurrency": 25,
+    "sampleIntervalSec": 3
+  },
+  "heapGrowth": {
+    "initialHeap": 9.758384704589844,
+    "finalHeap": 22.52751922607422,
+    "heapDelta": 12.769134521484375,
+    "heapSlopePerMin": 51.0765380859375
+  },
+  "latencyDrift": {
+    "initialP95": 27.5204645,
+    "finalP95": 15.842129249999985,
+    "p95Drift": -11.678335250000014
+  },
+  "runtime": {
+    "durationMs": 15008.917257000001,
+    "cpu": {
+      "userMs": 6630,
+      "systemMs": 1140,
+      "totalMs": 7770,
+      "percent": 51.76922403497264
+    },
+    "memory": {
+      "startHeapUsedMb": 6.913414001464844,
+      "endHeapUsedMb": 24.946571350097656,
+      "peakHeapUsedMb": 25.7904052734375,
+      "heapDeltaMb": 18.033157348632812,
+      "startRssMb": 68.58203125,
+      "endRssMb": 120.66796875,
+      "peakRssMb": 120.66796875,
+      "externalMb": 6.3690032958984375
+    },
+    "eventLoop": {
+      "utilizationPercent": 65.07597257698782,
+      "lagMinMs": 3.803136,
+      "lagMeanMs": 10.399261490631506,
+      "lagP50Ms": 10.018815,
+      "lagP90Ms": 10.420223,
+      "lagP95Ms": 10.838015,
+      "lagP99Ms": 23.379967,
+      "lagMaxMs": 59.080703
+    },
+    "gc": {
+      "count": 111,
+      "durationMs": 99.8927880031988
+    }
+  },
+  "timeSeries": [
+    {
+      "elapsedSec": 3,
+      "requests": 5506,
+      "throughput": 1822.5753061900034,
+      "p50": 11.2577575,
+      "p95": 27.5204645,
+      "heapUsedMb": 9.758384704589844,
+      "rssMb": 90.6484375
+    },
+    {
+      "elapsedSec": 6,
+      "requests": 7634,
+      "throughput": 2545.5151717239078,
+      "p50": 8.7265435,
+      "p95": 17.48318744999999,
+      "heapUsedMb": 15.333549499511719,
+      "rssMb": 99.8125
+    },
+    {
+      "elapsedSec": 9,
+      "requests": 7898,
+      "throughput": 2632.6666666666665,
+      "p50": 8.520097,
+      "p95": 15.110981449999997,
+      "heapUsedMb": 16.645057678222656,
+      "rssMb": 101.6796875
+    },
+    {
+      "elapsedSec": 12,
+      "requests": 7868,
+      "throughput": 2622.6666666666665,
+      "p50": 8.531454499999999,
+      "p95": 15.842129249999985,
+      "heapUsedMb": 22.52751922607422,
+      "rssMb": 120.3125
+    }
+  ]
+}

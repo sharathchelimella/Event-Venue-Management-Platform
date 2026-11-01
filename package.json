@@ -10,7 +10,14 @@
     "start": "node server.js",
     "clean": "rm -rf dist",
     "lint": "echo 'No lint errors'",
-    "benchmark": "node scripts/benchmark-vitals.js"
+    "benchmark": "node scripts/benchmark-vitals.js",
+    "benchmark:load": "node scripts/benchmark-load.js",
+    "benchmark:db": "node scripts/benchmark-db.js",
+    "benchmark:database": "node scripts/benchmark-database.js",
+    "benchmark:stress": "node scripts/benchmark-stress.js",
+    "benchmark:endurance": "node scripts/benchmark-endurance.js",
+    "benchmark:spike": "node scripts/benchmark-spike.js",
+    "benchmark:all": "node scripts/benchmark-load.js && node scripts/benchmark-database.js && node scripts/benchmark-stress.js"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

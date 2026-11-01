@@ -1,0 +1,1093 @@
+{
+  "system": {
+    "timestamp": "2026-11-01T18:37:15.818Z",
+    "nodeVersion": "v22.23.4",
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 2,
+    "totalMemoryMb": 4096,
+    "freeMemoryMb": 2458
+  },
+  "config": {
+    "target": "local",
+    "concurrencyLevels": [
+      10,
+      50
+    ],
+    "requestsPerTier": 50,
+    "warmUpCount": 10,
+    "timeoutMs": 10000,
+    "rampUpMs": 0,
+    "localBaseUrl": "http://127.0.0.1:3000",
+    "cloudBaseUrl": "https://ais-dev-bi6cb36iby3uez5dtkx6wu-799994418742.asia-northeast1.run.app"
+  },
+  "localResults": [
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "public-venues",
+      "scenarioName": "GET /api/venues",
+      "category": "Public Read",
+      "concurrency": 10,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.025885858,
+        "min": 1.223938,
+        "max": 11.621896,
+        "mean": 4.830856619999999,
+        "p50": 4.575477,
+        "p90": 7.862416100000001,
+        "p95": 10.018762349999989,
+        "p99": 11.62186513,
+        "throughput": 1931.55660515483,
+        "successfulResponses": 50,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 27.330209999999994,
+        "cpu": {
+          "userMs": 30,
+          "systemMs": 0,
+          "totalMs": 30,
+          "percent": 109.76864063613125
+        },
+        "memory": {
+          "startHeapUsedMb": 8.312835693359375,
+          "endHeapUsedMb": 8.511062622070312,
+          "peakHeapUsedMb": 8.312835693359375,
+          "heapDeltaMb": 0.1982269287109375,
+          "startRssMb": 64.5625,
+          "endRssMb": 70.99609375,
+          "peakRssMb": 64.5625,
+          "externalMb": 3.485074043273926
+        },
+        "eventLoop": {
+          "utilizationPercent": 99.63981949704458,
+          "lagMinMs": 10.93632,
+          "lagMeanMs": 10.940416,
+          "lagP50Ms": 10.944511,
+          "lagP90Ms": 10.944511,
+          "lagP95Ms": 10.944511,
+          "lagP99Ms": 10.944511,
+          "lagMaxMs": 10.944511
+        },
+        "gc": {
+          "count": 1,
+          "durationMs": 1.4732280001044273
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "public-venues",
+      "scenarioName": "GET /api/venues",
+      "category": "Public Read",
+      "concurrency": 50,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.02991368,
+        "min": 10.874584,
+        "max": 24.131649,
+        "mean": 17.63930974,
+        "p50": 17.464694,
+        "p90": 21.5437767,
+        "p95": 23.3338368,
+        "p99": 23.948374299999998,
+        "throughput": 1671.4760604512717,
+        "successfulResponses": 50,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 30.35204999999999,
+        "cpu": {
+          "userMs": 20,
+          "systemMs": 0,
+          "totalMs": 20,
+          "percent": 65.89340752931024
+        },
+        "memory": {
+          "startHeapUsedMb": 8.53912353515625,
+          "endHeapUsedMb": 8.921348571777344,
+          "peakHeapUsedMb": 8.53912353515625,
+          "heapDeltaMb": 0.38222503662109375,
+          "startRssMb": 70.99609375,
+          "endRssMb": 72.28515625,
+          "peakRssMb": 70.99609375,
+          "externalMb": 3.530245780944824
+        },
+        "eventLoop": {
+          "utilizationPercent": 85.54011374269375,
+          "lagMinMs": 9.715712,
+          "lagMeanMs": 9.719808,
+          "lagP50Ms": 9.723903,
+          "lagP90Ms": 9.723903,
+          "lagP95Ms": 9.723903,
+          "lagP99Ms": 9.723903,
+          "lagMaxMs": 9.723903
+        },
+        "gc": {
+          "count": 1,
+          "durationMs": 0.8614180004224181
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "events-approved",
+      "scenarioName": "GET /api/events/approved",
+      "category": "Relational DB",
+      "concurrency": 10,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.026123244,
+        "min": 1.334816,
+        "max": 11.08298,
+        "mean": 4.87313436,
+        "p50": 4.250129,
+        "p90": 9.765481000000001,
+        "p95": 10.792163899999998,
+        "p99": 11.07984008,
+        "throughput": 1914.0042484769501,
+        "successfulResponses": 50,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 26.924127999999996,
+        "cpu": {
+          "userMs": 10,
+          "systemMs": 10,
+          "totalMs": 20,
+          "percent": 74.28281428464463
+        },
+        "memory": {
+          "startHeapUsedMb": 9.188186645507812,
+          "endHeapUsedMb": 8.886672973632812,
+          "peakHeapUsedMb": 9.188186645507812,
+          "heapDeltaMb": -0.301513671875,
+          "startRssMb": 72.28515625,
+          "endRssMb": 72.96484375,
+          "peakRssMb": 72.28515625,
+          "externalMb": 3.579874038696289
+        },
+        "eventLoop": {
+          "utilizationPercent": 99.45347953468422,
+          "lagMinMs": 10.928128,
+          "lagMeanMs": 10.932224,
+          "lagP50Ms": 10.936319,
+          "lagP90Ms": 10.936319,
+          "lagP95Ms": 10.936319,
+          "lagP99Ms": 10.936319,
+          "lagMaxMs": 10.936319
+        },
+        "gc": {
+          "count": 1,
+          "durationMs": 0.731432999484241
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "events-approved",
+      "scenarioName": "GET /api/events/approved",
+      "category": "Relational DB",
+      "concurrency": 50,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.030164896,
+        "min": 10.39808,
+        "max": 26.030657,
+        "mean": 18.612853360000003,
+        "p50": 18.637755499999997,
+        "p90": 24.9235254,
+        "p95": 25.35085675,
+        "p99": 25.91483325,
+        "throughput": 1657.5558556542014,
+        "successfulResponses": 50,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 30.893934,
+        "cpu": {
+          "userMs": 40,
+          "systemMs": 0,
+          "totalMs": 40,
+          "percent": 129.47525556311476
+        },
+        "memory": {
+          "startHeapUsedMb": 8.892936706542969,
+          "endHeapUsedMb": 8.699417114257812,
+          "peakHeapUsedMb": 8.892936706542969,
+          "heapDeltaMb": -0.19351959228515625,
+          "startRssMb": 72.96484375,
+          "endRssMb": 73.515625,
+          "peakRssMb": 72.96484375,
+          "externalMb": 3.588224411010742
+        },
+        "eventLoop": {
+          "utilizationPercent": 92.0878853282362,
+          "lagMinMs": 10.215424,
+          "lagMeanMs": 10.21952,
+          "lagP50Ms": 10.223615,
+          "lagP90Ms": 10.223615,
+          "lagP95Ms": 10.223615,
+          "lagP99Ms": 10.223615,
+          "lagMaxMs": 10.223615
+        },
+        "gc": {
+          "count": 1,
+          "durationMs": 4.552436999976635
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "auth-demo-switch",
+      "scenarioName": "POST /api/auth/demo-switch",
+      "category": "Role Switch",
+      "concurrency": 10,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.031500177,
+        "min": 1.933033,
+        "max": 10.445388,
+        "mean": 5.648484679999999,
+        "p50": 5.4336455,
+        "p90": 9.0961328,
+        "p95": 9.72507465,
+        "p99": 10.280808269999998,
+        "throughput": 1587.2926682284992,
+        "successfulResponses": 50,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 32.42037099999999,
+        "cpu": {
+          "userMs": 30,
+          "systemMs": 10,
+          "totalMs": 40,
+          "percent": 123.3792173445517
+        },
+        "memory": {
+          "startHeapUsedMb": 8.955619812011719,
+          "endHeapUsedMb": 8.401443481445312,
+          "peakHeapUsedMb": 8.955619812011719,
+          "heapDeltaMb": -0.5541763305664062,
+          "startRssMb": 73.515625,
+          "endRssMb": 75.7890625,
+          "peakRssMb": 73.515625,
+          "externalMb": 3.4423828125
+        },
+        "eventLoop": {
+          "utilizationPercent": 91.38297385810125,
+          "lagMinMs": 9.510912,
+          "lagMeanMs": 10.018816,
+          "lagP50Ms": 9.519103,
+          "lagP90Ms": 10.526719,
+          "lagP95Ms": 10.526719,
+          "lagP99Ms": 10.526719,
+          "lagMaxMs": 10.526719
+        },
+        "gc": {
+          "count": 1,
+          "durationMs": 0.734124000184238
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "auth-demo-switch",
+      "scenarioName": "POST /api/auth/demo-switch",
+      "category": "Role Switch",
+      "concurrency": 50,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.026067899,
+        "min": 6.644032,
+        "max": 22.7664,
+        "mean": 14.352312139999999,
+        "p50": 13.516875500000001,
+        "p90": 22.532555199999997,
+        "p95": 22.5584276,
+        "p99": 22.73023359,
+        "throughput": 1918.0678887853603,
+        "successfulResponses": 50,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 26.485236999999984,
+        "cpu": {
+          "userMs": 0,
+          "systemMs": 0,
+          "totalMs": 0,
+          "percent": 0
+        },
+        "memory": {
+          "startHeapUsedMb": 8.412979125976562,
+          "endHeapUsedMb": 9.333122253417969,
+          "peakHeapUsedMb": 8.412979125976562,
+          "heapDeltaMb": 0.9201431274414062,
+          "startRssMb": 75.7890625,
+          "endRssMb": 75.7890625,
+          "peakRssMb": 75.7890625,
+          "externalMb": 3.4711837768554688
+        },
+        "eventLoop": {
+          "utilizationPercent": 70.60321395055622,
+          "lagMinMs": 10.297344,
+          "lagMeanMs": 10.30144,
+          "lagP50Ms": 10.305535,
+          "lagP90Ms": 10.305535,
+          "lagP95Ms": 10.305535,
+          "lagP99Ms": 10.305535,
+          "lagMaxMs": 10.305535
+        },
+        "gc": {
+          "count": 0,
+          "durationMs": 0
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "users-registrations-valid",
+      "scenarioName": "GET /api/users/registrations (Valid Auth)",
+      "category": "Auth Private",
+      "concurrency": 10,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.021016379,
+        "min": 1.367323,
+        "max": 6.441998,
+        "mean": 3.7280261399999994,
+        "p50": 3.5462035,
+        "p90": 5.8913027,
+        "p95": 5.9251255,
+        "p99": 6.41954179,
+        "throughput": 2379.0967987396875,
+        "successfulResponses": 50,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 21.515286000000003,
+        "cpu": {
+          "userMs": 30,
+          "systemMs": 0,
+          "totalMs": 30,
+          "percent": 139.43574814668972
+        },
+        "memory": {
+          "startHeapUsedMb": 9.515769958496094,
+          "endHeapUsedMb": 8.892723083496094,
+          "peakHeapUsedMb": 9.515769958496094,
+          "heapDeltaMb": -0.623046875,
+          "startRssMb": 75.7890625,
+          "endRssMb": 75.79296875,
+          "peakRssMb": 75.7890625,
+          "externalMb": 3.505805015563965
+        },
+        "eventLoop": {
+          "utilizationPercent": 92.2214486140915,
+          "lagMinMs": 10.665984,
+          "lagMeanMs": 10.67008,
+          "lagP50Ms": 10.674175,
+          "lagP90Ms": 10.674175,
+          "lagP95Ms": 10.674175,
+          "lagP99Ms": 10.674175,
+          "lagMaxMs": 10.674175
+        },
+        "gc": {
+          "count": 1,
+          "durationMs": 0.3971910001710057
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "users-registrations-valid",
+      "scenarioName": "GET /api/users/registrations (Valid Auth)",
+      "category": "Auth Private",
+      "concurrency": 50,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.027242828,
+        "min": 4.32931,
+        "max": 24.465456,
+        "mean": 14.563102380000005,
+        "p50": 14.2975535,
+        "p90": 23.1400327,
+        "p95": 23.93149615,
+        "p99": 24.32053507,
+        "throughput": 1835.345434769107,
+        "successfulResponses": 50,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 27.628678000000036,
+        "cpu": {
+          "userMs": 0,
+          "systemMs": 10,
+          "totalMs": 10,
+          "percent": 36.19427610687701
+        },
+        "memory": {
+          "startHeapUsedMb": 8.897781372070312,
+          "endHeapUsedMb": 9.801132202148438,
+          "peakHeapUsedMb": 8.897781372070312,
+          "heapDeltaMb": 0.903350830078125,
+          "startRssMb": 75.79296875,
+          "endRssMb": 75.79296875,
+          "peakRssMb": 75.79296875,
+          "externalMb": 3.593686103820801
+        },
+        "eventLoop": {
+          "utilizationPercent": 56.641710450660476,
+          "lagMinMs": 10.0352,
+          "lagMeanMs": 10.039296,
+          "lagP50Ms": 10.043391,
+          "lagP90Ms": 10.043391,
+          "lagP95Ms": 10.043391,
+          "lagP99Ms": 10.043391,
+          "lagMaxMs": 10.043391
+        },
+        "gc": {
+          "count": 0,
+          "durationMs": 0
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "auth-login-bad-pass",
+      "scenarioName": "POST /api/auth/login (Bad Pass)",
+      "category": "Security 401",
+      "concurrency": 10,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.02722689,
+        "min": 1.510622,
+        "max": 9.54012,
+        "mean": 4.72161304,
+        "p50": 4.462045,
+        "p90": 6.2291247000000025,
+        "p95": 8.671189299999998,
+        "p99": 9.161947309999999,
+        "throughput": 1836.419804098081,
+        "successfulResponses": 0,
+        "expectedErrors": 50,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 28.268766000000028,
+        "cpu": {
+          "userMs": 10,
+          "systemMs": 0,
+          "totalMs": 10,
+          "percent": 35.374731249322984
+        },
+        "memory": {
+          "startHeapUsedMb": 8.343963623046875,
+          "endHeapUsedMb": 9.26275634765625,
+          "peakHeapUsedMb": 8.343963623046875,
+          "heapDeltaMb": 0.918792724609375,
+          "startRssMb": 75.79296875,
+          "endRssMb": 76.13671875,
+          "peakRssMb": 75.79296875,
+          "externalMb": 3.452911376953125
+        },
+        "eventLoop": {
+          "utilizationPercent": 72.05834518526338,
+          "lagMinMs": 10.100736,
+          "lagMeanMs": 10.104832,
+          "lagP50Ms": 10.108927,
+          "lagP90Ms": 10.108927,
+          "lagP95Ms": 10.108927,
+          "lagP99Ms": 10.108927,
+          "lagMaxMs": 10.108927
+        },
+        "gc": {
+          "count": 0,
+          "durationMs": 0
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "auth-login-bad-pass",
+      "scenarioName": "POST /api/auth/login (Bad Pass)",
+      "category": "Security 401",
+      "concurrency": 50,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.025932355,
+        "min": 4.936314,
+        "max": 23.099871,
+        "mean": 13.495309100000002,
+        "p50": 13.2444195,
+        "p90": 21.4615269,
+        "p95": 22.2222006,
+        "p99": 22.91492589,
+        "throughput": 1928.093302748632,
+        "successfulResponses": 0,
+        "expectedErrors": 50,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 26.410946000000024,
+        "cpu": {
+          "userMs": 10,
+          "systemMs": 0,
+          "totalMs": 10,
+          "percent": 37.863089038915874
+        },
+        "memory": {
+          "startHeapUsedMb": 9.280364990234375,
+          "endHeapUsedMb": 8.788902282714844,
+          "peakHeapUsedMb": 9.280364990234375,
+          "heapDeltaMb": -0.49146270751953125,
+          "startRssMb": 76.13671875,
+          "endRssMb": 80.13671875,
+          "peakRssMb": 76.13671875,
+          "externalMb": 3.448758125305176
+        },
+        "eventLoop": {
+          "utilizationPercent": 56.47759702112813,
+          "lagMinMs": 10.698752,
+          "lagMeanMs": 10.702848,
+          "lagP50Ms": 10.706943,
+          "lagP90Ms": 10.706943,
+          "lagP95Ms": 10.706943,
+          "lagP99Ms": 10.706943,
+          "lagMaxMs": 10.706943
+        },
+        "gc": {
+          "count": 1,
+          "durationMs": 1.3028570003807545
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "missing-auth-token",
+      "scenarioName": "POST /api/events/1/register (No Auth)",
+      "category": "Security 401",
+      "concurrency": 10,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.021356893,
+        "min": 1.539517,
+        "max": 7.722489,
+        "mean": 3.656024079999999,
+        "p50": 3.3264899999999997,
+        "p90": 6.2442304,
+        "p95": 6.55739015,
+        "p99": 7.419720939999999,
+        "throughput": 2341.1645130216275,
+        "successfulResponses": 0,
+        "expectedErrors": 50,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 21.879217999999923,
+        "cpu": {
+          "userMs": 10,
+          "systemMs": 0,
+          "totalMs": 10,
+          "percent": 45.70547265446157
+        },
+        "memory": {
+          "startHeapUsedMb": 8.978836059570312,
+          "endHeapUsedMb": 9.811302185058594,
+          "peakHeapUsedMb": 8.978836059570312,
+          "heapDeltaMb": 0.8324661254882812,
+          "startRssMb": 80.13671875,
+          "endRssMb": 80.13671875,
+          "peakRssMb": 80.13671875,
+          "externalMb": 3.469529151916504
+        },
+        "eventLoop": {
+          "utilizationPercent": 76.9409710305315,
+          "lagMinMs": 10.36288,
+          "lagMeanMs": 10.366976,
+          "lagP50Ms": 10.371071,
+          "lagP90Ms": 10.371071,
+          "lagP95Ms": 10.371071,
+          "lagP99Ms": 10.371071,
+          "lagMaxMs": 10.371071
+        },
+        "gc": {
+          "count": 0,
+          "durationMs": 0
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "missing-auth-token",
+      "scenarioName": "POST /api/events/1/register (No Auth)",
+      "category": "Security 401",
+      "concurrency": 50,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.024372752,
+        "min": 6.362918,
+        "max": 21.340544,
+        "mean": 13.906307380000001,
+        "p50": 13.812088,
+        "p90": 20.0180855,
+        "p95": 20.64056585,
+        "p99": 21.22531805,
+        "throughput": 2051.471249533085,
+        "successfulResponses": 0,
+        "expectedErrors": 50,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 24.719739000000004,
+        "cpu": {
+          "userMs": 30,
+          "systemMs": 0,
+          "totalMs": 30,
+          "percent": 121.3605046558137
+        },
+        "memory": {
+          "startHeapUsedMb": 9.818778991699219,
+          "endHeapUsedMb": 10.665985107421875,
+          "peakHeapUsedMb": 9.818778991699219,
+          "heapDeltaMb": 0.8472061157226562,
+          "startRssMb": 80.13671875,
+          "endRssMb": 80.13671875,
+          "peakRssMb": 80.13671875,
+          "externalMb": 3.4868383407592773
+        },
+        "eventLoop": {
+          "utilizationPercent": 71.57185931297263,
+          "lagMinMs": 10.0352,
+          "lagMeanMs": 10.039296,
+          "lagP50Ms": 10.043391,
+          "lagP90Ms": 10.043391,
+          "lagP95Ms": 10.043391,
+          "lagP99Ms": 10.043391,
+          "lagMaxMs": 10.043391
+        },
+        "gc": {
+          "count": 0,
+          "durationMs": 0
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "malformed-token",
+      "scenarioName": "GET /api/auth/me (Malformed Token)",
+      "category": "Security 401",
+      "concurrency": 10,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.020001642,
+        "min": 1.452937,
+        "max": 8.273856,
+        "mean": 3.60955034,
+        "p50": 3.37942,
+        "p90": 5.759943700000001,
+        "p95": 6.449618999999999,
+        "p99": 7.616049619999997,
+        "throughput": 2499.7947668496417,
+        "successfulResponses": 0,
+        "expectedErrors": 50,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 20.627972999999997,
+        "cpu": {
+          "userMs": 10,
+          "systemMs": 0,
+          "totalMs": 10,
+          "percent": 48.4778606215938
+        },
+        "memory": {
+          "startHeapUsedMb": 10.843055725097656,
+          "endHeapUsedMb": 8.539947509765625,
+          "peakHeapUsedMb": 10.843055725097656,
+          "heapDeltaMb": -2.3031082153320312,
+          "startRssMb": 80.13671875,
+          "endRssMb": 80.421875,
+          "peakRssMb": 80.13671875,
+          "externalMb": 3.439281463623047
+        },
+        "eventLoop": {
+          "utilizationPercent": 88.5393588298581,
+          "lagMinMs": 9.740288,
+          "lagMeanMs": 9.744384,
+          "lagP50Ms": 9.748479,
+          "lagP90Ms": 9.748479,
+          "lagP95Ms": 9.748479,
+          "lagP99Ms": 9.748479,
+          "lagMaxMs": 9.748479
+        },
+        "gc": {
+          "count": 1,
+          "durationMs": 0.4467250006273389
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "malformed-token",
+      "scenarioName": "GET /api/auth/me (Malformed Token)",
+      "category": "Security 401",
+      "concurrency": 50,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.020940486,
+        "min": 3.734763,
+        "max": 18.826235,
+        "mean": 11.153687559999996,
+        "p50": 11.235396999999999,
+        "p90": 17.4665829,
+        "p95": 18.15366435,
+        "p99": 18.7372804,
+        "throughput": 2387.719177100283,
+        "successfulResponses": 0,
+        "expectedErrors": 50,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 21.18663300000003,
+        "cpu": {
+          "userMs": 10,
+          "systemMs": 0,
+          "totalMs": 10,
+          "percent": 47.19957154116932
+        },
+        "memory": {
+          "startHeapUsedMb": 8.545967102050781,
+          "endHeapUsedMb": 9.432151794433594,
+          "peakHeapUsedMb": 8.545967102050781,
+          "heapDeltaMb": 0.8861846923828125,
+          "startRssMb": 80.421875,
+          "endRssMb": 80.4375,
+          "peakRssMb": 80.421875,
+          "externalMb": 3.4565906524658203
+        },
+        "eventLoop": {
+          "utilizationPercent": 54.614901676910996,
+          "lagMinMs": 9.920512,
+          "lagMeanMs": 9.924608,
+          "lagP50Ms": 9.928703,
+          "lagP90Ms": 9.928703,
+          "lagP95Ms": 9.928703,
+          "lagP99Ms": 9.928703,
+          "lagMaxMs": 9.928703
+        },
+        "gc": {
+          "count": 0,
+          "durationMs": 0
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "unauthorized-role-rls",
+      "scenarioName": "POST /api/venues (Student Role 403)",
+      "category": "Security 403",
+      "concurrency": 10,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.024587643,
+        "min": 1.403391,
+        "max": 8.729064,
+        "mean": 4.3212350399999995,
+        "p50": 3.701434,
+        "p90": 6.8759265,
+        "p95": 7.891893599999998,
+        "p99": 8.58708356,
+        "throughput": 2033.5418079724031,
+        "successfulResponses": 0,
+        "expectedErrors": 50,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 24.853478999999993,
+        "cpu": {
+          "userMs": 10,
+          "systemMs": 0,
+          "totalMs": 10,
+          "percent": 40.235815677958016
+        },
+        "memory": {
+          "startHeapUsedMb": 9.625770568847656,
+          "endHeapUsedMb": 10.561927795410156,
+          "peakHeapUsedMb": 9.625770568847656,
+          "heapDeltaMb": 0.9361572265625,
+          "startRssMb": 80.4375,
+          "endRssMb": 80.4375,
+          "peakRssMb": 80.4375,
+          "externalMb": 3.478334426879883
+        },
+        "eventLoop": {
+          "utilizationPercent": 76.50945943482115,
+          "lagMinMs": 10.125312,
+          "lagMeanMs": 10.129408,
+          "lagP50Ms": 10.133503,
+          "lagP90Ms": 10.133503,
+          "lagP95Ms": 10.133503,
+          "lagP99Ms": 10.133503,
+          "lagMaxMs": 10.133503
+        },
+        "gc": {
+          "count": 0,
+          "durationMs": 0
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "unauthorized-role-rls",
+      "scenarioName": "POST /api/venues (Student Role 403)",
+      "category": "Security 403",
+      "concurrency": 50,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.02950175,
+        "min": 6.658522,
+        "max": 25.818208,
+        "mean": 15.386451939999999,
+        "p50": 15.717945,
+        "p90": 24.2562123,
+        "p95": 24.96003925,
+        "p99": 25.6611238,
+        "throughput": 1694.8147143813503,
+        "successfulResponses": 0,
+        "expectedErrors": 50,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 29.796177000000057,
+        "cpu": {
+          "userMs": 20,
+          "systemMs": 0,
+          "totalMs": 20,
+          "percent": 67.12270503695814
+        },
+        "memory": {
+          "startHeapUsedMb": 10.567092895507812,
+          "endHeapUsedMb": 11.531410217285156,
+          "peakHeapUsedMb": 10.567092895507812,
+          "heapDeltaMb": 0.9643173217773438,
+          "startRssMb": 80.4375,
+          "endRssMb": 80.3515625,
+          "peakRssMb": 80.4375,
+          "externalMb": 3.4964542388916016
+        },
+        "eventLoop": {
+          "utilizationPercent": 58.07923541034875,
+          "lagMinMs": 9.904128,
+          "lagMeanMs": 9.949184,
+          "lagP50Ms": 9.912319,
+          "lagP90Ms": 9.994239,
+          "lagP95Ms": 9.994239,
+          "lagP99Ms": 9.994239,
+          "lagMaxMs": 9.994239
+        },
+        "gc": {
+          "count": 0,
+          "durationMs": 0
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "invalid-event-roster",
+      "scenarioName": "GET /api/events/99999/reg (Non-existent)",
+      "category": "Security 401/404",
+      "concurrency": 10,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.025614039,
+        "min": 1.72331,
+        "max": 9.729151,
+        "mean": 3.766924100000001,
+        "p50": 2.978968,
+        "p90": 5.594129300000001,
+        "p95": 9.196236149999999,
+        "p99": 9.68781852,
+        "throughput": 1952.0544963642787,
+        "successfulResponses": 0,
+        "expectedErrors": 50,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 25.881261999999992,
+        "cpu": {
+          "userMs": 0,
+          "systemMs": 10,
+          "totalMs": 10,
+          "percent": 38.63799222773604
+        },
+        "memory": {
+          "startHeapUsedMb": 8.487625122070312,
+          "endHeapUsedMb": 9.320640563964844,
+          "peakHeapUsedMb": 8.487625122070312,
+          "heapDeltaMb": 0.8330154418945312,
+          "startRssMb": 80.3515625,
+          "endRssMb": 80.3515625,
+          "peakRssMb": 80.3515625,
+          "externalMb": 3.4545135498046875
+        },
+        "eventLoop": {
+          "utilizationPercent": 81.563588451406,
+          "lagMinMs": 10.067968,
+          "lagMeanMs": 10.072064,
+          "lagP50Ms": 10.076159,
+          "lagP90Ms": 10.076159,
+          "lagP95Ms": 10.076159,
+          "lagP99Ms": 10.076159,
+          "lagMaxMs": 10.076159
+        },
+        "gc": {
+          "count": 0,
+          "durationMs": 0
+        }
+      }
+    },
+    {
+      "environment": "Local Loopback",
+      "scenarioId": "invalid-event-roster",
+      "scenarioName": "GET /api/events/99999/reg (Non-existent)",
+      "category": "Security 401/404",
+      "concurrency": 50,
+      "metrics": {
+        "totalRequests": 50,
+        "wallTimeSeconds": 0.026024662,
+        "min": 4.553278,
+        "max": 23.372214,
+        "mean": 13.780606659999998,
+        "p50": 14.228213,
+        "p90": 22.0386352,
+        "p95": 22.7624955,
+        "p99": 23.23653839,
+        "throughput": 1921.2545392520371,
+        "successfulResponses": 0,
+        "expectedErrors": 50,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 26.35368399999993,
+        "cpu": {
+          "userMs": 10,
+          "systemMs": 0,
+          "totalMs": 10,
+          "percent": 37.94535898662224
+        },
+        "memory": {
+          "startHeapUsedMb": 9.3258056640625,
+          "endHeapUsedMb": 10.17437744140625,
+          "peakHeapUsedMb": 9.3258056640625,
+          "heapDeltaMb": 0.84857177734375,
+          "startRssMb": 80.3515625,
+          "endRssMb": 80.3515625,
+          "peakRssMb": 80.3515625,
+          "externalMb": 3.471822738647461
+        },
+        "eventLoop": {
+          "utilizationPercent": 49.43393815014964,
+          "lagMinMs": 10.32192,
+          "lagMeanMs": 10.326016,
+          "lagP50Ms": 10.330111,
+          "lagP90Ms": 10.330111,
+          "lagP95Ms": 10.330111,
+          "lagP99Ms": 10.330111,
+          "lagMaxMs": 10.330111
+        },
+        "gc": {
+          "count": 0,
+          "durationMs": 0
+        }
+      }
+    }
+  ],
+  "cloudResults": [],
+  "comparison": [],
+  "summary": {
+    "slowestEndpoint": {
+      "name": "GET /api/events/approved (Local Loopback)",
+      "mean": 18.612853360000003
+    },
+    "highestP95": {
+      "name": "GET /api/events/approved (Local Loopback)",
+      "p95": 25.35085675,
+      "concurrency": 50
+    },
+    "highestError": {
+      "name": "GET /api/venues (Local Loopback)",
+      "errorRate": 0
+    },
+    "highestResource": {
+      "name": "GET /api/users/registrations (Valid Auth) (Local Loopback)",
+      "cpu": 139.43574814668972,
+      "elu": 92.2214486140915,
+      "heapDelta": -0.623046875
+    }
+  }
+}

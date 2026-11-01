@@ -1,0 +1,185 @@
+{
+  "system": {
+    "timestamp": "2026-11-01T18:35:37.343Z",
+    "nodeVersion": "v22.23.4",
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 2,
+    "totalMemoryMb": 4096,
+    "freeMemoryMb": 2494
+  },
+  "config": {
+    "baselineUsers": 10,
+    "spikeUsers": 100,
+    "baselineRequests": 100,
+    "spikeRequests": 250
+  },
+  "phases": [
+    {
+      "name": "Baseline",
+      "stats": {
+        "totalRequests": 100,
+        "wallTimeSeconds": 0.06127381,
+        "min": 1.896024,
+        "max": 9.443666,
+        "mean": 5.670437910000001,
+        "p50": 5.631978500000001,
+        "p90": 7.369255200000001,
+        "p95": 8.881010400000001,
+        "p99": 9.32040407,
+        "throughput": 1632.018638958472,
+        "successfulResponses": 100,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 63.426957000000016,
+        "cpu": {
+          "userMs": 0,
+          "systemMs": 0,
+          "totalMs": 0,
+          "percent": 0
+        },
+        "memory": {
+          "startHeapUsedMb": 8.194114685058594,
+          "endHeapUsedMb": 8.253105163574219,
+          "peakHeapUsedMb": 8.194114685058594,
+          "heapDeltaMb": 0.058990478515625,
+          "startRssMb": 61.921875,
+          "endRssMb": 68.85546875,
+          "peakRssMb": 61.921875,
+          "externalMb": 3.584188461303711
+        },
+        "eventLoop": {
+          "utilizationPercent": 75.07504849596549,
+          "lagMinMs": 9.723904,
+          "lagMeanMs": 9.968844800000001,
+          "lagP50Ms": 9.969663,
+          "lagP90Ms": 10.256383,
+          "lagP95Ms": 10.256383,
+          "lagP99Ms": 10.256383,
+          "lagMaxMs": 10.256383
+        },
+        "gc": {
+          "count": 2,
+          "durationMs": 2.281656000763178
+        }
+      }
+    },
+    {
+      "name": "Spike",
+      "stats": {
+        "totalRequests": 250,
+        "wallTimeSeconds": 0.260616783,
+        "min": 13.585888,
+        "max": 249.46487,
+        "mean": 81.72292764400002,
+        "p50": 27.5375685,
+        "p90": 235.30939350000003,
+        "p95": 243.92353034999996,
+        "p99": 248.46051678,
+        "throughput": 959.2628576034567,
+        "successfulResponses": 250,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 261.78312300000005,
+        "cpu": {
+          "userMs": 120,
+          "systemMs": 20,
+          "totalMs": 140,
+          "percent": 53.47938339019661
+        },
+        "memory": {
+          "startHeapUsedMb": 8.279167175292969,
+          "endHeapUsedMb": 10.510177612304688,
+          "peakHeapUsedMb": 10.014198303222656,
+          "heapDeltaMb": 2.2310104370117188,
+          "startRssMb": 68.85546875,
+          "endRssMb": 77.7421875,
+          "peakRssMb": 77.73828125,
+          "externalMb": 4.15618896484375
+        },
+        "eventLoop": {
+          "utilizationPercent": 60.525590068081044,
+          "lagMinMs": 9.306112,
+          "lagMeanMs": 11.6312064,
+          "lagP50Ms": 10.117119,
+          "lagP90Ms": 13.975551,
+          "lagP95Ms": 16.654335,
+          "lagP99Ms": 29.474815,
+          "lagMaxMs": 29.474815
+        },
+        "gc": {
+          "count": 3,
+          "durationMs": 4.153779000975192
+        }
+      }
+    },
+    {
+      "name": "Recovery",
+      "stats": {
+        "totalRequests": 100,
+        "wallTimeSeconds": 0.059985483,
+        "min": 1.037722,
+        "max": 11.072838,
+        "mean": 5.6342482899999995,
+        "p50": 5.371846,
+        "p90": 8.916943700000004,
+        "p95": 10.280131749999999,
+        "p99": 10.89641604,
+        "throughput": 1667.070014256616,
+        "successfulResponses": 100,
+        "expectedErrors": 0,
+        "unexpectedErrors": 0,
+        "networkFailures": 0,
+        "timeouts": 0,
+        "errorRate": 0
+      },
+      "runtime": {
+        "durationMs": 60.90276000000006,
+        "cpu": {
+          "userMs": 30,
+          "systemMs": 0,
+          "totalMs": 30,
+          "percent": 49.25885132299418
+        },
+        "memory": {
+          "startHeapUsedMb": 10.51434326171875,
+          "endHeapUsedMb": 9.614486694335938,
+          "peakHeapUsedMb": 10.51434326171875,
+          "heapDeltaMb": -0.8998565673828125,
+          "startRssMb": 77.7421875,
+          "endRssMb": 78.1875,
+          "peakRssMb": 77.7421875,
+          "externalMb": 3.7303199768066406
+        },
+        "eventLoop": {
+          "utilizationPercent": 73.61933802135475,
+          "lagMinMs": 9.781248,
+          "lagMeanMs": 10.047488,
+          "lagP50Ms": 10.027007,
+          "lagP90Ms": 10.559487,
+          "lagP95Ms": 10.559487,
+          "lagP99Ms": 10.559487,
+          "lagMaxMs": 10.559487
+        },
+        "gc": {
+          "count": 1,
+          "durationMs": 1.252139000222087
+        }
+      }
+    }
+  ],
+  "resilience": {
+    "latencyOverhead": -0.03618962000000181,
+    "isRecovered": true
+  }
+}
