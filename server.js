@@ -1,7 +1,7 @@
 import path from 'path';
 import express from 'express';
 import dotenv from 'dotenv';
-import { createApiServer } from './src/server/app.ts';
+import { createApiServer } from './src/server/app.js';
 
 dotenv.config();
 
@@ -18,7 +18,6 @@ async function startServer() {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   } else {
-    // In dev mode when running server.ts directly, mount Vite middlewares
     try {
       const { createServer: createViteServer } = await import('vite');
       const vite = await createViteServer({
@@ -27,7 +26,7 @@ async function startServer() {
       });
       app.use(vite.middlewares);
     } catch {
-      // If vite middleware cannot be mounted, proceed
+      // Proceed if vite middleware not mounted directly
     }
   }
 
@@ -36,6 +35,6 @@ async function startServer() {
   });
 }
 
-startServer().catch(err => {
+startServer().catch((err) => {
   console.error('[CampusEventHub] Server startup failed:', err);
 });

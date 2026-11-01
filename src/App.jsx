@@ -1,36 +1,60 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { api, storage } from './services/api.ts';
-import { IUser, IVenue, IEvent, UserRole } from './types/index.ts';
-import { Header } from './components/Header.tsx';
-import { StudentFeed } from './components/StudentFeed.tsx';
-import { MyRegistrations } from './components/MyRegistrations.tsx';
-import { OrganizerPortal } from './components/OrganizerPortal.tsx';
-import { AdminPortal } from './components/AdminPortal.tsx';
-import { VenueDirectory } from './components/VenueDirectory.tsx';
-import { AuthModal } from './components/AuthModal.tsx';
-import { CheckCircle2, AlertCircle, Info, Sparkles } from 'lucide-react';
+import React, { useEffect, useState, useCallback, Suspense, lazy } from 'react';
+import { api, storage } from './services/api.js';
+import { webVitals } from './services/webVitals.js';
+import { Header } from './components/Header.jsx';
+import { StudentFeed } from './components/StudentFeed.jsx';
+import { MyRegistrations } from './components/MyRegistrations.jsx';
+import { VenueDirectory } from './components/VenueDirectory.jsx';
+import { CheckCircle2, AlertCircle, Info, Activity } from 'lucide-react';
 
-interface Toast {
-  id: string;
-  type: 'success' | 'error' | 'info';
-  message: string;
-}
+// Code-splitting non-critical routes and heavy modals to slash initial bundle size and maximize FCP/LCP
+const OrganizerPortal = lazy(() =>
+  import('./components/OrganizerPortal.jsx').then((m) => ({ default: m.OrganizerPortal }))
+);
+const AdminPortal = lazy(() =>
+  import('./components/AdminPortal.jsx').then((m) => ({ default: m.AdminPortal }))
+);
+const AuthModal = lazy(() =>
+  import('./components/AuthModal.jsx').then((m) => ({ default: m.AuthModal }))
+);
+const WebVitalsHUD = lazy(() =>
+  import('./components/WebVitalsHUD.jsx').then((m) => ({ default: m.WebVitalsHUD }))
+);
+
+// Zero-CLS Suspense Skeleton matching final view layout
+const PortalSkeleton = () => (
+  <div className="space-y-6 animate-pulse min-h-[400px]">
+    <div className="h-8 bg-slate-200 rounded w-64 mb-2"></div>
+    <div className="h-4 bg-slate-200 rounded w-96 mb-6"></div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="h-44 bg-white border border-slate-200 rounded-xl"></div>
+      <div className="h-44 bg-white border border-slate-200 rounded-xl"></div>
+      <div className="h-44 bg-white border border-slate-200 rounded-xl"></div>
+    </div>
+  </div>
+);
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<IUser | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('feed');
-  const [venues, setVenues] = useState<IVenue[]>([]);
-  const [approvedEvents, setApprovedEvents] = useState<IEvent[]>([]);
-  const [pendingEvents, setPendingEvents] = useState<IEvent[]>([]);
-  const [myEvents, setMyEvents] = useState<IEvent[]>([]);
-  const [myRegistrations, setMyRegistrations] = useState<{ _id: string; createdAt: string; event: IEvent }[]>([]);
-  const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
+  const [currentUser, setCurrentUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('feed');
+  const [venues, setVenues] = useState([]);
+  const [approvedEvents, setApprovedEvents] = useState([]);
+  const [pendingEvents, setPendingEvents] = useState([]);
+  const [myEvents, setMyEvents] = useState([]);
+  const [myRegistrations, setMyRegistrations] = useState([]);
+  const [registeredEventIds, setRegisteredEventIds] = useState(new Set());
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [vitalsHudOpen, setVitalsHudOpen] = useState(false);
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [loadingRegistrations, setLoadingRegistrations] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState([]);
 
-  const addToast = (type: 'success' | 'error' | 'info', message: string) => {
+  // Initialize Web Vitals observer immediately
+  useEffect(() => {
+    webVitals.init();
+  }, []);
+
+  const addToast = (type, message) => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(() => {
@@ -42,8 +66,8 @@ export default function App() {
   const refreshFeed = useCallback(async () => {
     try {
       const events = await api.getApprovedEvents();
-      setApprovedEvents(events);
-    } catch (err: any) {
+      setApprovedEvents(events || []);
+    } catch (err) {
       console.error('Failed to load approved events', err);
     } finally {
       setLoadingFeed(false);
@@ -54,14 +78,14 @@ export default function App() {
   const refreshVenues = useCallback(async () => {
     try {
       const data = await api.getVenues();
-      setVenues(data);
-    } catch (err: any) {
+      setVenues(data || []);
+    } catch (err) {
       console.error('Failed to load venues', err);
     }
   }, []);
 
   // Load Student Registrations
-  const refreshRegistrations = useCallback(async (userId?: string) => {
+  const refreshRegistrations = useCallback(async (userId) => {
     if (!userId) {
       setMyRegistrations([]);
       setRegisteredEventIds(new Set());
@@ -70,8 +94,8 @@ export default function App() {
     setLoadingRegistrations(true);
     try {
       const data = await api.getMyRegistrations(userId);
-      setMyRegistrations(data);
-      const ids = new Set(data.map((r) => (typeof r.event === 'object' ? r.event._id : (r.event as string))));
+      setMyRegistrations(data || []);
+      const ids = new Set((data || []).map((r) => (typeof r.event === 'object' ? r.event._id : r.event)));
       setRegisteredEventIds(ids);
     } catch {
       setMyRegistrations([]);
@@ -85,7 +109,7 @@ export default function App() {
   const refreshMyEvents = useCallback(async () => {
     try {
       const data = await api.getMyEvents();
-      setMyEvents(data);
+      setMyEvents(data || []);
     } catch {
       setMyEvents([]);
     }
@@ -95,7 +119,7 @@ export default function App() {
   const refreshPendingEvents = useCallback(async () => {
     try {
       const data = await api.getPendingEvents();
-      setPendingEvents(data);
+      setPendingEvents(data || []);
     } catch {
       setPendingEvents([]);
     }
@@ -143,7 +167,7 @@ export default function App() {
   }, [refreshVenues, refreshFeed, refreshRegistrations, refreshMyEvents, refreshPendingEvents]);
 
   // Demo Switch Handler
-  const handleDemoSwitch = async (role: UserRole) => {
+  const handleDemoSwitch = async (role) => {
     try {
       const user = await api.demoSwitch(role);
       setCurrentUser(user);
@@ -162,7 +186,7 @@ export default function App() {
         await refreshPendingEvents();
         setActiveTab('admin');
       }
-    } catch (err: any) {
+    } catch (err) {
       addToast('error', err.message || 'Failed to switch demo persona.');
     }
   };
@@ -177,7 +201,7 @@ export default function App() {
   };
 
   // Student Seat Registration Handler
-  const handleRegister = async (event: IEvent) => {
+  const handleRegister = async (event) => {
     if (!currentUser) {
       setAuthModalOpen(true);
       return;
@@ -188,14 +212,14 @@ export default function App() {
       addToast('success', `Seat reserved successfully for "${event.title}"!`);
       await refreshFeed();
       await refreshRegistrations(currentUser._id);
-    } catch (err: any) {
+    } catch (err) {
       addToast('error', err.message || 'Registration failed.');
       throw err;
     }
   };
 
   // Student Cancel Registration Handler
-  const handleCancelRegistration = async (eventId: string) => {
+  const handleCancelRegistration = async (eventId) => {
     if (!currentUser) return;
 
     try {
@@ -203,13 +227,13 @@ export default function App() {
       addToast('info', 'Your seat reservation has been cancelled.');
       await refreshFeed();
       await refreshRegistrations(currentUser._id);
-    } catch (err: any) {
+    } catch (err) {
       addToast('error', err.message || 'Failed to cancel reservation.');
       throw err;
     }
   };
 
-  const handleSelectTab = (tab: string) => {
+  const handleSelectTab = (tab) => {
     if (tab === 'organizer' && currentUser?.role !== 'Organizer' && currentUser?.role !== 'Admin') {
       setActiveTab('feed');
       return;
@@ -256,7 +280,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[500px]">
         {activeTab === 'feed' && (
           <StudentFeed
             events={approvedEvents}
@@ -291,26 +315,30 @@ export default function App() {
         )}
 
         {activeTab === 'organizer' && (currentUser?.role === 'Organizer' || currentUser?.role === 'Admin') && (
-          <OrganizerPortal
-            venues={venues}
-            myEvents={myEvents}
-            onRefreshEvents={refreshMyEvents}
-            onRefreshVenues={refreshVenues}
-          />
+          <Suspense fallback={<PortalSkeleton />}>
+            <OrganizerPortal
+              venues={venues}
+              myEvents={myEvents}
+              onRefreshEvents={refreshMyEvents}
+              onRefreshVenues={refreshVenues}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'admin' && currentUser?.role === 'Admin' && (
-          <AdminPortal
-            pendingEvents={pendingEvents}
-            venues={venues}
-            onRefreshPending={refreshPendingEvents}
-            onRefreshVenues={refreshVenues}
-            onRefreshFeed={refreshFeed}
-          />
+          <Suspense fallback={<PortalSkeleton />}>
+            <AdminPortal
+              pendingEvents={pendingEvents}
+              venues={venues}
+              onRefreshPending={refreshPendingEvents}
+              onRefreshVenues={refreshVenues}
+              onRefreshFeed={refreshFeed}
+            />
+          </Suspense>
         )}
       </main>
 
-      {/* Clean Anti-Slop Footer */}
+      {/* Clean Anti-Slop Footer with Core Web Vitals HUD Launcher */}
       <footer className="mt-auto border-t border-slate-200 bg-white py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-2">
@@ -318,25 +346,46 @@ export default function App() {
             <span>—</span>
             <span>Campus Venue Booking & Event Management System</span>
           </div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span>Ashok Mittal Auditorium · Shanti Devi Mittal Auditorium · Seminar Halls</span>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setVitalsHudOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+              title="Open Live Web Vitals Telemetry Monitor"
+            >
+              <Activity className="w-3.5 h-3.5 text-emerald-600" />
+              <span>⚡ Core Web Vitals HUD</span>
+            </button>
+            <span className="text-slate-300">|</span>
+            <span className="text-slate-400">Ashok Mittal · Shanti Devi Mittal</span>
           </div>
         </div>
       </footer>
 
-      {/* Authentication Modal */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onSuccess={(user) => {
-          setCurrentUser(user);
-          addToast('success', `Welcome back, ${user.name}!`);
-          refreshRegistrations(user._id);
-          if (user.role === 'Organizer') refreshMyEvents();
-          if (user.role === 'Admin') refreshPendingEvents();
-        }}
-        onDemoSwitch={handleDemoSwitch}
-      />
+      {/* Authentication Modal (Lazy Loaded) */}
+      {authModalOpen && (
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={authModalOpen}
+            onClose={() => setAuthModalOpen(false)}
+            onSuccess={(user) => {
+              setCurrentUser(user);
+              addToast('success', `Welcome back, ${user.name}!`);
+              refreshRegistrations(user._id);
+              if (user.role === 'Organizer') refreshMyEvents();
+              if (user.role === 'Admin') refreshPendingEvents();
+            }}
+            onDemoSwitch={handleDemoSwitch}
+          />
+        </Suspense>
+      )}
+
+      {/* Web Vitals Real-Time Telemetry HUD (Lazy Loaded) */}
+      {vitalsHudOpen && (
+        <Suspense fallback={null}>
+          <WebVitalsHUD isOpen={vitalsHudOpen} onClose={() => setVitalsHudOpen(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }

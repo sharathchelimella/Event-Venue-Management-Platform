@@ -1,77 +1,93 @@
-# Strict Role-Based View Isolation & Demo Bar Removal
+# API Rigorous Load Testing & Latency Decomposition Plan
 
-Hide the top demo switcher bar for logged-in students and attendees so they only see the student experience (Browse Events, Venues Directory, My Registrations) without any organizer or admin UI affordances. Organizers and Admins access their dedicated portals exclusively through authenticated login with role verification.
+A production-grade benchmarking and load testing framework to empirically evaluate API performance under concurrency (10, 50, 100, 200 concurrent users), assess error handling (both successful and failure states), and decompose latency into network transit, server execution, database query, authentication, and response serialization.
 
 ---
 
-## User Review & Critical Decisions
+### User Review & Clarifications Addressed
 
 > [!IMPORTANT]
-> The following adjustments have been confirmed based on your answers:
-> - **Student Role Isolation**: When a student or attendee is logged in, the top demo bar and role switcher are completely hidden from the header. Students never see "Organizer" or "Admin" switcher buttons, portals, or queues.
-> - **Credential-Based Privileged Access**: Access to the Organizer Portal and Admin Console requires signing in with valid Organizer (`priya.organizer@campus.edu`) or Admin (`dean.admin@campus.edu`) account credentials via the standard Sign In modal.
-> - **Navigation Cleanliness**: The main navigation bar renders strictly student-scoped links (`Browse Events`, `Venues Directory`, `My Registrations`) when a student is logged in, with zero clutter from administrative or organizer features.
+> **Clarification of Previous 0.87–1.56 ms Measurements**:
+> - **Included in 0.87–1.56 ms**:
+>   - In-process Node.js / Express routing and middleware pipeline.
+>   - Role-Based Access Control (RLS / Auth context resolution).
+>   - Embedded Mongoose / database lookup and entity hydration.
+>   - JSON object serialization and buffer framing.
+>   - Kernel loopback TCP transfer (`127.0.0.1:3000`).
+> - **Excluded from 0.87–1.56 ms**:
+>   - Wide Area Network (WAN) latency (ISP routing, cellular hops).
+>   - DNS resolution and TLS 1.3 handshake.
+>   - Google Cloud Run ingress gateway and reverse-proxy TLS termination (~30–80 ms depending on geographic distance).
+> 
+> The new benchmark tests **both environments** to measure raw engine saturation alongside real-world end-to-end network performance.
 
 ---
 
-## 1. Overview & Core Concept
+### 1. Scope & Test Matrix
 
-CampusEventHub should feel like a real campus portal for students where they see only what is relevant to an attendee. By removing the demo role switcher bar for logged-in students:
-1. **Students (Attendees)** enjoy an uncluttered, student-only interface: browsing events, checking real-time capacity, registering for seats, and managing their personal passes.
-2. **Organizers & Admins** authenticate securely through the Sign In modal to access their respective management tools (venue booking, attendee rosters, and admin approval queues).
+#### Concurrency & Request Volume
+- **Concurrency Levels**: 10, 50, 100, and 200 concurrent worker connections.
+- **Request Volumes**: 100 to 1,000 requests per concurrency stage.
+- **Warm-Up Phase**: 50 unmeasured warm-up requests per endpoint prior to timing to prime JIT compiler optimization, connection pools, and in-memory caches.
+
+#### Endpoints & Request Types
+1. **Public Read (Success)**: `GET /api/venues` (Venue directory retrieval).
+2. **Entity Query with Population (Success)**: `GET /api/events/approved` (Event list with relational organizer/venue data).
+3. **Authenticated Role Switch (Success)**: `POST /api/auth/demo-switch` with JSON body `{"role": "organizer"}`.
+4. **Private Authenticated Resource (Success)**: `GET /api/users/registrations` with authenticated session headers.
+5. **Simulated Auth Failure (Failed Request)**: `POST /api/auth/login` with invalid credentials (expects HTTP `401 Unauthorized`).
+6. **Simulated RLS / Not Found Failure (Failed Request)**: `GET /api/events/invalid-event-uuid-9999/registrations` (expects HTTP `404` or `403`).
+
+#### Measured Metrics
+- **Average Latency**: Mean response time across all completed requests ($\frac{\sum t}{N}$).
+- **p50 Latency**: Median response time (50% of requests finish faster than this).
+- **p95 Latency**: 95th percentile latency (reveals tail latency under queue contention).
+- **p99 Latency**: 99th percentile worst-case latency (reveals garbage collection or connection pool starvation).
+- **Error Rate**: Percentage of requests resulting in network errors or unexpected status codes.
+- **Throughput**: Effective requests handled per second ($\text{RPS} = \frac{\text{Completed Requests}}{\text{Wall-Clock Seconds}}$).
 
 ---
 
-## 2. User Experience & Visual Design
+### 2. Architecture & Implementation Design
 
-### UI Layout Structure
 ```
-[Unauthenticated Guest]
-  ├── Top Navigation: Browse Events · Venues Directory
-  └── Top Right: "Sign In / Register" Button (Opens AuthModal with quick prefill helpers)
-
-[Logged-in Student (Alex Rivera)]
-  ├── Top Demo Bar: HIDDEN (Clean zero-clutter top header)
-  ├── Top Navigation: Browse Events · Venues Directory · My Registrations
-  └── Top Right: Student Name (Alex Rivera), Role Badge (Student), Logout Button
-
-[Logged-in Organizer (Priya Sharma)]
-  ├── Top Navigation: Browse Events · Venues Directory · Organizer Portal
-  └── Top Right: Priya Sharma · Organizer · Logout Button
-
-[Logged-in Admin (Dean Office)]
-  ├── Top Navigation: Browse Events · Venues Directory · Admin Queue · Venues & RLS
-  └── Top Right: Dean Office · Admin · Logout Button
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Load Testing Engine (Node.js)                         │
+│  ┌───────────────────────┐   ┌────────────────────┐   ┌──────────────────┐  │
+│  │   Warm-Up Generator   │──▶│ Concurrency Pool   │──▶│ Percentile Math  │  │
+│  │ (50 unmeasured reqs)  │   │ (10/50/100/200 c.) │   │(p50, p95, p99)   │  │
+│  └───────────────────────┘   └──────────┬─────────┘   └──────────────────┘  │
+└─────────────────────────────────────────┼───────────────────────────────────┘
+                                          │
+                 ┌────────────────────────┴────────────────────────┐
+                 ▼                                                 ▼
+┌───────────────────────────────────┐     ┌───────────────────────────────────┐
+│     Local Loopback (Port 3000)     │     │      Cloud Run Production URL     │
+│   • Raw Engine Execution Time     │     │   • End-to-End Real World WAN     │
+│   • Zero Network Overhead         │     │   • Ingress & TLS Termination     │
+│   • CPU/Event-Loop Saturation     │     │   • Geographic Latency Profiling  │
+└───────────────────────────────────┘     └───────────────────────────────────┘
 ```
 
-### Key Changes
-- In `src/components/Header.tsx`:
-  - Conditionally suppress the top demo bar (`bg-slate-900`) whenever `currentUser?.role === 'Student'` (or when a user is logged in).
-  - Ensure the navigation bar displays only tabs permitted for the active role:
-    - `Student`: `Browse Events`, `Venues Directory`, `My Registrations`.
-    - `Organizer`: `Browse Events`, `Venues Directory`, `Organizer Portal`.
-    - `Admin`: `Browse Events`, `Venues Directory`, `Admin Queue`.
-- In `src/App.tsx`:
-  - Default the initial load to an unauthenticated guest or authenticated student without rendering intrusive demo switcher buttons.
-  - When a student is active, ensure `activeTab` cannot switch to `organizer` or `admin`.
+#### Implementation Files
+1. **`scripts/benchmark-load.js`**:
+   - Zero-external-dependency Node.js load runner using native `http` and `https` modules with `keep-alive` agent pooling.
+   - Concurrency manager controlling asynchronous worker slots.
+   - Precise high-resolution timing via `process.hrtime.bigint()` for microsecond accuracy.
+   - Percentile calculation using sorted timing arrays.
+   - Formatted ASCII table generator displaying comprehensive metrics for each concurrency tier.
+   - CLI flags: `--target=local|cloud|both`, `--concurrency=10,50,100,200`, `--requests=500`.
+2. **`package.json`**:
+   - Add `"benchmark:load": "node scripts/benchmark-load.js"` script.
 
 ---
 
-## 3. Technical Architecture & Security Enforcement
+### 3. Verification & Execution Plan
 
-- **Client-Side Guard**: The tab router prevents rendering `<OrganizerPortal>` or `<AdminPortal>` if `currentUser?.role` does not match the required privileges.
-- **Backend RLS Guard (Defense-in-Depth)**: Even if a client attempts to forge an API call to `/api/events` (create), `/api/admin/events/:id` (approval), or `/api/venues` (create venue), the Express Row-Level Security middleware intercepts the request and returns a strict `403 Forbidden: Access restricted to [Admin/Organizer] roles`.
-
----
-
-## 4. Verification Plan
-
-1. Log in as a Student (`alex.student@campus.edu`):
-   - Verify the top demo switcher bar is completely gone.
-   - Verify no "Organizer" or "Admin" buttons appear in the top bar or header navigation.
-   - Verify only "Browse Events", "Venues Directory", and "My Registrations" are visible.
-2. Sign out and sign in as Organizer:
-   - Verify the Organizer Portal is available.
-3. Sign out and sign in as Admin:
-   - Verify the Admin Queue and RLS Security Console are available.
-4. Verify all compilation and tests pass cleanly.
+1. **Local Benchmark Execution**: Run `node scripts/benchmark-load.js --target=local` across 10, 50, 100, and 200 concurrent connections to evaluate backend processing limits.
+2. **Cloud Run Benchmark Execution**: Run `node scripts/benchmark-load.js --target=cloud` to record live production response times with TLS and WAN latency.
+3. **Metric Validation**: Confirm that:
+   - Failed request simulations (401, 404) are correctly categorized as intentional expected responses vs actual connection dropped failures.
+   - p50, p95, and p99 accurately represent tail degradation as concurrency scales from 10 to 200.
+   - Throughput (req/s) saturates at expected peak capacity.
+4. **Summary & Documentation**: Output clear tabular results comparing local vs cloud metrics with latency decomposition breakdown.

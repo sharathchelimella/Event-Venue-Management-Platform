@@ -1,24 +1,12 @@
 import React from 'react';
-import { IUser, UserRole } from '../types/index.ts';
-import { Calendar, UserCheck, Shield, Sparkles, LogOut, LogIn } from 'lucide-react';
+import { LogOut, LogIn } from 'lucide-react';
 
-interface HeaderProps {
-  currentUser: IUser | null;
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-  onOpenAuth: () => void;
-  onLogout: () => void;
-  onDemoSwitch: (role: UserRole) => void;
-  pendingCount?: number;
-}
-
-export const Header: React.FC<HeaderProps> = ({
+export const Header = ({
   currentUser,
   activeTab,
   setActiveTab,
   onOpenAuth,
   onLogout,
-  onDemoSwitch,
   pendingCount = 0,
 }) => {
   return (

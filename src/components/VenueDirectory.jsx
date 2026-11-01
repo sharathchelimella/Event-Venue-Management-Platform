@@ -1,25 +1,18 @@
 import React, { useState } from 'react';
-import { IVenue } from '../types/index.ts';
-import { Building, MapPin, Users, Calendar, Search } from 'lucide-react';
+import { Users, Calendar, Search } from 'lucide-react';
 
-interface VenueDirectoryProps {
-  venues: IVenue[];
-  onRequestBooking?: () => void;
-  canBook: boolean;
-}
-
-export const VenueDirectory: React.FC<VenueDirectoryProps> = ({
-  venues,
+export const VenueDirectory = ({
+  venues = [],
   onRequestBooking,
-  canBook,
+  canBook = false,
 }) => {
-  const [filterType, setFilterType] = useState<'all' | 'in_campus' | 'out_campus'>('all');
+  const [filterType, setFilterType] = useState('all');
   const [search, setSearch] = useState('');
 
   const filteredVenues = venues.filter((venue) => {
     const matchesType =
       filterType === 'all' || venue.location_type === filterType;
-    const matchesSearch = venue.venue_name
+    const matchesSearch = (venue.venue_name || '')
       .toLowerCase()
       .includes(search.toLowerCase());
     return matchesType && matchesSearch;
@@ -92,7 +85,7 @@ export const VenueDirectory: React.FC<VenueDirectoryProps> = ({
                   <span className="font-semibold text-slate-900 capitalize">
                     {venue.location_type === 'out_campus' ? 'Off-Campus Facility' : 'In-Campus Facility'}
                   </span>
-                  <span className="font-mono tabular-nums text-slate-400">ID: {venue._id.slice(-6)}</span>
+                  <span className="font-mono tabular-nums text-slate-400">ID: {(venue._id || '').slice(-6)}</span>
                 </div>
 
                 <h3 className="text-base font-bold text-slate-900 mb-3">
@@ -106,7 +99,7 @@ export const VenueDirectory: React.FC<VenueDirectoryProps> = ({
                       Seating Capacity:
                     </span>
                     <span className="font-mono tabular-nums font-bold text-slate-900">
-                      {venue.max_capacity.toLocaleString()} Seats
+                      {(venue.max_capacity || 0).toLocaleString()} Seats
                     </span>
                   </div>
 

@@ -1,10 +1,10 @@
-import express, { Express } from 'express';
-import { apiRouter } from './routes.ts';
-import { connectAndSeedDB } from './seed.ts';
+import express from 'express';
+import { apiRouter } from './routes.js';
+import { connectAndSeedDB } from './seed.js';
 
 let initialized = false;
 
-export async function createApiServer(): Promise<Express> {
+export async function createApiServer() {
   const app = express();
 
   app.use(express.json());
@@ -12,7 +12,7 @@ export async function createApiServer(): Promise<Express> {
   // Mount API router
   app.use('/api', apiRouter);
 
-  // Initialize DB and run startup seeder if not already done
+  // Initialize DB and startup seeder once
   if (!initialized) {
     initialized = true;
     try {

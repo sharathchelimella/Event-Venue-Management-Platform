@@ -1,18 +1,7 @@
 import React, { useState } from 'react';
-import { IEvent, IUser, EventCategory } from '../types/index.ts';
-import { Search, MapPin, Calendar, CheckCircle2, AlertOctagon, User } from 'lucide-react';
+import { Search, MapPin, CheckCircle2, AlertOctagon, User } from 'lucide-react';
 
-interface StudentFeedProps {
-  events: IEvent[];
-  currentUser: IUser | null;
-  registeredEventIds: Set<string>;
-  onRegister: (event: IEvent) => Promise<void>;
-  onCancelRegistration: (eventId: string) => Promise<void>;
-  onOpenAuth: () => void;
-  loading: boolean;
-}
-
-const CATEGORIES: ('All' | EventCategory)[] = [
+const CATEGORIES = [
   'All',
   'Hackathon',
   'Standup Comedy',
@@ -21,8 +10,8 @@ const CATEGORIES: ('All' | EventCategory)[] = [
   'Other',
 ];
 
-export const StudentFeed: React.FC<StudentFeedProps> = ({
-  events,
+export const StudentFeed = ({
+  events = [],
   currentUser,
   registeredEventIds,
   onRegister,
@@ -30,9 +19,9 @@ export const StudentFeed: React.FC<StudentFeedProps> = ({
   onOpenAuth,
   loading,
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState<'All' | EventCategory>('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
 
   // Filter events
   const filteredEvents = events.filter((event) => {
@@ -47,7 +36,7 @@ export const StudentFeed: React.FC<StudentFeedProps> = ({
     return matchesCategory && matchesSearch;
   });
 
-  const handleRegisterClick = async (event: IEvent) => {
+  const handleRegisterClick = async (event) => {
     if (!currentUser) {
       onOpenAuth();
       return;
@@ -60,7 +49,7 @@ export const StudentFeed: React.FC<StudentFeedProps> = ({
     }
   };
 
-  const handleCancelClick = async (eventId: string) => {
+  const handleCancelClick = async (eventId) => {
     setActionLoadingId(eventId);
     try {
       await onCancelRegistration(eventId);
@@ -148,7 +137,7 @@ export const StudentFeed: React.FC<StudentFeedProps> = ({
                 className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col justify-between hover:border-slate-300 transition-colors shadow-xs"
               >
                 <div>
-                  {/* Unboxed Metadata Strip (Zero-Pill Discipline) */}
+                  {/* Unboxed Metadata Strip */}
                   <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
                     <span className="font-semibold text-slate-900">{event.category}</span>
                     <span aria-hidden="true">·</span>

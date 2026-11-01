@@ -1,66 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api.ts';
-import { IEvent, IVenue } from '../types/index.ts';
+import { api } from '../services/api.js';
 import {
   Check,
   X,
   Shield,
-  Building2,
   Plus,
   Edit2,
   AlertCircle,
   CheckCircle2,
   ShieldCheck,
-  ShieldAlert,
   Play,
   RotateCw,
-  Lock,
-  ListFilter,
 } from 'lucide-react';
 
-interface AdminPortalProps {
-  pendingEvents: IEvent[];
-  venues: IVenue[];
-  onRefreshPending: () => Promise<void>;
-  onRefreshVenues: () => Promise<void>;
-  onRefreshFeed: () => Promise<void>;
-}
-
-export const AdminPortal: React.FC<AdminPortalProps> = ({
-  pendingEvents,
-  venues,
+export const AdminPortal = ({
+  pendingEvents = [],
+  venues = [],
   onRefreshPending,
   onRefreshVenues,
   onRefreshFeed,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'pending' | 'venues' | 'rls'>('pending');
+  const [activeSubTab, setActiveSubTab] = useState('pending');
 
   // Venue creation state
   const [venueName, setVenueName] = useState('');
-  const [locationType, setLocationType] = useState<'in_campus' | 'out_campus'>('in_campus');
+  const [locationType, setLocationType] = useState('in_campus');
   const [maxCapacity, setMaxCapacity] = useState('');
   const [addingVenue, setAddingVenue] = useState(false);
-  const [venueError, setVenueError] = useState<string | null>(null);
-  const [venueSuccess, setVenueSuccess] = useState<string | null>(null);
+  const [venueError, setVenueError] = useState(null);
+  const [venueSuccess, setVenueSuccess] = useState(null);
 
   // Venue editing state
-  const [editingVenueId, setEditingVenueId] = useState<string | null>(null);
+  const [editingVenueId, setEditingVenueId] = useState(null);
   const [editCapacity, setEditCapacity] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Approval actions state
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [processingId, setProcessingId] = useState(null);
+  const [actionMessage, setActionMessage] = useState(null);
 
   // RLS State
-  const [rlsPolicies, setRlsPolicies] = useState<any[]>([]);
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [rlsPolicies, setRlsPolicies] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
   const [loadingRLS, setLoadingRLS] = useState(false);
 
   // Simulator State
-  const [simActor, setSimActor] = useState<'Student' | 'Organizer' | 'Admin' | 'Guest'>('Student');
-  const [simAction, setSimAction] = useState<string>('APPROVE_REJECT_EVENT');
-  const [simResult, setSimResult] = useState<any | null>(null);
+  const [simActor, setSimActor] = useState('Student');
+  const [simAction, setSimAction] = useState('APPROVE_REJECT_EVENT');
+  const [simResult, setSimResult] = useState(null);
   const [simulating, setSimulating] = useState(false);
 
   // Load RLS Data
@@ -71,9 +58,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         api.getRLSPolicies(),
         api.getRLSAuditLogs(),
       ]);
-      setRlsPolicies(policies);
-      setAuditLogs(logs);
-    } catch (err: any) {
+      setRlsPolicies(policies || []);
+      setAuditLogs(logs || []);
+    } catch (err) {
       console.error('Failed to load RLS policies or audit logs', err);
     } finally {
       setLoadingRLS(false);
@@ -86,7 +73,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   }, [activeSubTab]);
 
-  const handleApprove = async (event: IEvent) => {
+  const handleApprove = async (event) => {
     setProcessingId(event._id);
     setActionMessage(null);
     try {
@@ -99,14 +86,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       await onRefreshFeed();
       await onRefreshVenues();
       if (activeSubTab === 'rls') loadRLSData();
-    } catch (err: any) {
+    } catch (err) {
       setActionMessage({ type: 'error', text: err.message || 'Approval failed.' });
     } finally {
       setProcessingId(null);
     }
   };
 
-  const handleReject = async (event: IEvent) => {
+  const handleReject = async (event) => {
     setProcessingId(event._id);
     setActionMessage(null);
     try {
@@ -119,14 +106,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       await onRefreshFeed();
       await onRefreshVenues();
       if (activeSubTab === 'rls') loadRLSData();
-    } catch (err: any) {
+    } catch (err) {
       setActionMessage({ type: 'error', text: err.message || 'Rejection failed.' });
     } finally {
       setProcessingId(null);
     }
   };
 
-  const handleAddVenue = async (e: React.FormEvent) => {
+  const handleAddVenue = async (e) => {
     e.preventDefault();
     setVenueError(null);
     setVenueSuccess(null);
@@ -145,19 +132,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       setMaxCapacity('');
       await onRefreshVenues();
       if (activeSubTab === 'rls') loadRLSData();
-    } catch (err: any) {
+    } catch (err) {
       setVenueError(err.message || 'Failed to create venue.');
     } finally {
       setAddingVenue(false);
     }
   };
 
-  const startEditCapacity = (venue: IVenue) => {
+  const startEditCapacity = (venue) => {
     setEditingVenueId(venue._id);
     setEditCapacity(String(venue.max_capacity));
   };
 
-  const handleSaveCapacity = async (venueId: string) => {
+  const handleSaveCapacity = async (venueId) => {
     const capNum = parseInt(editCapacity, 10);
     if (isNaN(capNum) || capNum <= 0) {
       alert('Capacity must be a positive integer.');
@@ -170,7 +157,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       setEditingVenueId(null);
       await onRefreshVenues();
       if (activeSubTab === 'rls') loadRLSData();
-    } catch (err: any) {
+    } catch (err) {
       alert(err.message || 'Failed to update capacity.');
     } finally {
       setSavingEdit(false);
@@ -185,7 +172,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         action: simAction,
       });
       setSimResult(result);
-    } catch (err: any) {
+    } catch (err) {
       alert(err.message || 'Simulation failed.');
     } finally {
       setSimulating(false);
@@ -366,7 +353,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {/* SUB-TAB 2: VENUES & CAPACITIES */}
       {activeSubTab === 'venues' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left: Add Venue Form (4 cols) */}
+          {/* Left: Add Venue Form */}
           <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
             <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
               <Plus className="w-4 h-4 text-slate-900" />
@@ -404,7 +391,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <label className="block font-semibold text-slate-700 mb-1">Location Type *</label>
                 <select
                   value={locationType}
-                  onChange={(e) => setLocationType(e.target.value as 'in_campus' | 'out_campus')}
+                  onChange={(e) => setLocationType(e.target.value)}
                   className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-hidden focus:border-slate-900"
                 >
                   <option value="in_campus">In-Campus Facility</option>
@@ -435,7 +422,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </form>
           </div>
 
-          {/* Right: Existing Venues & Capacity Control Table (8 cols) */}
+          {/* Right: Existing Venues */}
           <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
@@ -550,7 +537,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <label className="block font-semibold text-slate-700 mb-1">Select Persona / Role</label>
                 <select
                   value={simActor}
-                  onChange={(e) => setSimActor(e.target.value as any)}
+                  onChange={(e) => setSimActor(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white"
                 >
                   <option value="Student">Student (Alex Rivera)</option>
@@ -588,7 +575,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
             </div>
 
-            {/* Simulation Evaluation Result Card */}
             {simResult && (
               <div
                 className={`p-4 rounded-xl border mt-3 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs ${

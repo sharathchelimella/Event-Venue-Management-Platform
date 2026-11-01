@@ -1,24 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../services/api.ts';
-import { IEvent } from '../types/index.ts';
-import { X, Users, Mail, Calendar, Download, Search, CheckCircle2, AlertCircle } from 'lucide-react';
+import { api } from '../services/api.js';
+import { X, Users, Download, Search, CheckCircle2, AlertCircle } from 'lucide-react';
 
-interface AttendeeModalProps {
-  event: IEvent | null;
-  onClose: () => void;
-}
-
-interface Attendee {
-  name: string;
-  email: string;
-  registeredAt: string;
-}
-
-export const AttendeeModal: React.FC<AttendeeModalProps> = ({ event, onClose }) => {
-  const [attendees, setAttendees] = useState<Attendee[]>([]);
+export const AttendeeModal = ({ event, onClose }) => {
+  const [attendees, setAttendees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!event) return;

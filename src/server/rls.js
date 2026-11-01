@@ -1,45 +1,14 @@
 /**
- * CampusEventHub Row-Level Security (RLS) Engine & Audit System
- * Enforces database-level ownership predicates, role validations,
- * query filtering, and real-time security auditing.
+ * CampusEventHub Row-Level Security (RLS) Engine & Audit System (JavaScript Edition)
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { db } from './db.ts';
-import { IUser, UserRole } from '../types/index.ts';
-
-export interface AuthContext {
-  uid: string;
-  role: UserRole;
-  user: IUser;
-}
-
-export interface RLSAuditEntry {
-  id: string;
-  timestamp: string;
-  actor: string;
-  actorRole: string;
-  action: string;
-  collection: string;
-  outcome: 'ALLOWED' | 'DENIED';
-  predicate: string;
-  reason?: string;
-}
-
-export interface RLSPolicy {
-  id: string;
-  collection: string;
-  operation: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
-  permittedRoles: UserRole[];
-  predicateDescription: string;
-  status: 'ACTIVE';
-}
+import { db } from './db.js';
 
 // In-memory security audit log
-const auditLogs: RLSAuditEntry[] = [];
+const auditLogs = [];
 
-export function logAudit(entry: Omit<RLSAuditEntry, 'id' | 'timestamp'>) {
-  const newEntry: RLSAuditEntry = {
+export function logAudit(entry) {
+  const newEntry = {
     id: Math.random().toString(36).substring(2, 9),
     timestamp: new Date().toISOString(),
     ...entry,
@@ -50,12 +19,12 @@ export function logAudit(entry: Omit<RLSAuditEntry, 'id' | 'timestamp'>) {
   }
 }
 
-export function getAuditLogs(): RLSAuditEntry[] {
+export function getAuditLogs() {
   return [...auditLogs];
 }
 
 // Active RLS Policy Definitions
-export const RLS_POLICIES: RLSPolicy[] = [
+export const RLS_POLICIES = [
   {
     id: 'POL-VENUE-01',
     collection: 'venues',
@@ -130,17 +99,8 @@ export const RLS_POLICIES: RLSPolicy[] = [
   },
 ];
 
-// Extend Express Request to include Auth Context
-declare global {
-  namespace Express {
-    interface Request {
-      auth?: AuthContext;
-    }
-  }
-}
-
 // Middleware: Extract Authentication Context
-export async function rlsAuthContext(req: Request, _res: Response, next: NextFunction) {
+export async function rlsAuthContext(req, _res, next) {
   const userIdHeader = req.headers['x-user-id'];
   if (typeof userIdHeader === 'string' && userIdHeader.trim()) {
     try {
@@ -153,14 +113,14 @@ export async function rlsAuthContext(req: Request, _res: Response, next: NextFun
         };
       }
     } catch {
-      // Continue unauthenticated if user lookup fails
+      // Continue unauthenticated if lookup fails
     }
   }
   next();
 }
 
 // RLS Guard: Require Authenticated User
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export function requireAuth(req, res, next) {
   if (!req.auth) {
     logAudit({
       actor: 'Anonymous Guest',
@@ -177,8 +137,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 // RLS Guard: Require Specific Role(s)
-export function requireRole(allowedRoles: UserRole[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+export function requireRole(allowedRoles) {
+  return (req, res, next) => {
     if (!req.auth) {
       logAudit({
         actor: 'Anonymous Guest',
@@ -212,13 +172,8 @@ export function requireRole(allowedRoles: UserRole[]) {
 }
 
 // Simulator Engine: Evaluates a hypothetical security request against RLS rules
-export function simulateRLSCheck(params: {
-  role: 'Student' | 'Organizer' | 'Admin' | 'Guest';
-  action: string;
-  targetOwnerId?: string;
-  actorId?: string;
-}): { outcome: 'ALLOWED' | 'DENIED'; ruleId: string; predicate: string; reason: string } {
-  const { role, action, targetOwnerId = 'owner-123', actorId = 'actor-123' } = params;
+export function simulateRLSCheck(params) {
+  const { role, action, targetOwnerId = 'owner-123', actorId = 'actor-123' } = params || {};
 
   switch (action) {
     case 'VIEW_APPROVED_EVENTS':

@@ -1,33 +1,24 @@
 import React, { useState } from 'react';
-import { api } from '../services/api.ts';
-import { IUser, UserRole } from '../types/index.ts';
+import { api } from '../services/api.js';
 import { X, Lock, Mail, User, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
-interface AuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: (user: IUser) => void;
-  onDemoSwitch: (role: UserRole) => void;
-}
-
-export const AuthModal: React.FC<AuthModalProps> = ({
+export const AuthModal = ({
   isOpen,
   onClose,
   onSuccess,
-  onDemoSwitch,
 }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'Student' | 'Organizer'>('Student');
+  const [role, setRole] = useState('Student');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -42,14 +33,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onSuccess(user);
         onClose();
       }
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Authentication failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
 
-  const fillDemo = (roleChoice: UserRole) => {
+  const fillDemo = (roleChoice) => {
     if (roleChoice === 'Student') {
       setEmail('alex.student@campus.edu');
       setPassword('password123');

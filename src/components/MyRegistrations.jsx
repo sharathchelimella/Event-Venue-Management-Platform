@@ -1,29 +1,15 @@
 import React, { useState } from 'react';
-import { IEvent } from '../types/index.ts';
-import { Calendar, MapPin, Ticket, AlertCircle, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, Ticket, ArrowRight } from 'lucide-react';
 
-interface RegistrationItem {
-  _id: string;
-  createdAt: string;
-  event: IEvent;
-}
-
-interface MyRegistrationsProps {
-  registrations: RegistrationItem[];
-  onCancelRegistration: (eventId: string) => Promise<void>;
-  onExploreEvents: () => void;
-  loading: boolean;
-}
-
-export const MyRegistrations: React.FC<MyRegistrationsProps> = ({
-  registrations,
+export const MyRegistrations = ({
+  registrations = [],
   onCancelRegistration,
   onExploreEvents,
   loading,
 }) => {
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState(null);
 
-  const handleCancel = async (eventId: string) => {
+  const handleCancel = async (eventId) => {
     setCancellingId(eventId);
     try {
       await onCancelRegistration(eventId);

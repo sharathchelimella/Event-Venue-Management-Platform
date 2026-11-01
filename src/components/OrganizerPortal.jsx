@@ -1,43 +1,33 @@
 import React, { useState } from 'react';
-import { api } from '../services/api.ts';
-import { IEvent, IVenue, EventCategory } from '../types/index.ts';
+import { api } from '../services/api.js';
 import {
   Calendar,
   Clock,
-  AlertTriangle,
   CheckCircle,
   Users,
   PlusCircle,
   AlertCircle,
-  MapPin,
   CheckCircle2,
   ChevronRight,
   UserCheck,
 } from 'lucide-react';
-import { AttendeeModal } from './AttendeeModal.tsx';
+import { AttendeeModal } from './AttendeeModal.jsx';
 
-interface OrganizerPortalProps {
-  venues: IVenue[];
-  myEvents: IEvent[];
-  onRefreshEvents: () => Promise<void>;
-  onRefreshVenues: () => Promise<void>;
-}
-
-export const OrganizerPortal: React.FC<OrganizerPortalProps> = ({
-  venues,
-  myEvents,
+export const OrganizerPortal = ({
+  venues = [],
+  myEvents = [],
   onRefreshEvents,
   onRefreshVenues,
 }) => {
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<EventCategory>('Hackathon');
+  const [category, setCategory] = useState('Hackathon');
   const [description, setDescription] = useState('');
   const [venueId, setVenueId] = useState(venues[0]?._id || '');
   const [eventDate, setEventDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [formSuccess, setFormSuccess] = useState<string | null>(null);
-  const [selectedRosterEvent, setSelectedRosterEvent] = useState<IEvent | null>(null);
+  const [formError, setFormError] = useState(null);
+  const [formSuccess, setFormSuccess] = useState(null);
+  const [selectedRosterEvent, setSelectedRosterEvent] = useState(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -55,7 +45,7 @@ export const OrganizerPortal: React.FC<OrganizerPortalProps> = ({
   const approvedPrograms = myEvents.filter((e) => e.status === 'Approved');
   const pendingPrograms = myEvents.filter((e) => e.status === 'Pending');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError(null);
     setFormSuccess(null);
@@ -95,7 +85,7 @@ export const OrganizerPortal: React.FC<OrganizerPortalProps> = ({
       setEventDate('');
       await onRefreshEvents();
       await onRefreshVenues();
-    } catch (err: any) {
+    } catch (err) {
       setFormError(err.message || 'Failed to submit booking request.');
     } finally {
       setSubmitting(false);
@@ -201,7 +191,7 @@ export const OrganizerPortal: React.FC<OrganizerPortalProps> = ({
                 <label className="block font-semibold text-slate-700 mb-1">Category *</label>
                 <select
                   value={category}
-                  onChange={(e) => setCategory(e.target.value as EventCategory)}
+                  onChange={(e) => setCategory(e.target.value)}
                   className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-hidden focus:border-slate-900"
                 >
                   <option value="Hackathon">Hackathon</option>

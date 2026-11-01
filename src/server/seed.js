@@ -1,10 +1,9 @@
 /**
- * Startup Seeder:
- * Auto-seeds 5 campus venues & 3 demo role-switcher accounts on boot
- * if collections are empty.
+ * Startup Seeder (JavaScript Edition)
+ * Auto-seeds campus venues & demo accounts on boot if collections are empty.
  */
 
-import { db } from './db.ts';
+import { db } from './db.js';
 
 export async function connectAndSeedDB() {
   await db.connect();
@@ -61,46 +60,46 @@ export async function connectAndSeedDB() {
       role: 'Admin',
     });
 
-    // Seed Initial Events (Approved + Pending)
+    // Seed Initial Events
     console.log('[Seeder] Seeding initial events...');
-    // Approved Event 1: Hackathon in Ashok Mittal Auditorium
     const event1 = await db.createEvent({
       title: 'HackCampus 2026: 36-Hour National Hackathon',
       category: 'Hackathon',
-      description: 'The largest annual collegiate hackathon bringing together 1,000+ developers, designers, and innovators to solve real campus and civic problems.',
+      description:
+        'The largest annual collegiate hackathon bringing together 1,000+ developers, designers, and innovators to solve real campus and civic problems.',
       venue_id: ashok._id,
       organizer_id: organizerUser._id,
       event_date: '2026-11-15',
     });
     await db.updateEventStatus(event1._id, 'Approved');
 
-    // Approved Event 2: Standup Comedy in Block 34 Seminar Hall
     const event2 = await db.createEvent({
       title: 'Campus Standup Night ft. The Punchliners',
       category: 'Standup Comedy',
-      description: 'An evening of non-stop comedy and satire featuring top campus comics and special guest improvisers. Free entry for enrolled students.',
+      description:
+        'An evening of non-stop comedy and satire featuring top campus comics and special guest improvisers. Free entry for enrolled students.',
       venue_id: seminar._id,
       organizer_id: organizerUser._id,
       event_date: '2026-11-20',
     });
     await db.updateEventStatus(event2._id, 'Approved');
 
-    // Approved Event 3: AI & Quantum Computing Symposium in Shanti Devi Mittal
     const event3 = await db.createEvent({
       title: 'Next-Gen AI & Robotics Annual Symposium',
       category: 'Seminar',
-      description: 'Keynotes from leading researchers on multimodal AI systems, autonomous robotics, and edge computing in higher education.',
+      description:
+        'Keynotes from leading researchers on multimodal AI systems, autonomous robotics, and edge computing in higher education.',
       venue_id: shanti._id,
       organizer_id: organizerUser._id,
       event_date: '2026-11-28',
     });
     await db.updateEventStatus(event3._id, 'Approved');
 
-    // Pending Event: Needs Admin review
     await db.createEvent({
       title: 'Web3 & Decentralized Systems Hands-on Workshop',
       category: 'Seminar',
-      description: 'Interactive coding lab covering smart contracts, distributed consensus, and cryptography fundamentals.',
+      description:
+        'Interactive coding lab covering smart contracts, distributed consensus, and cryptography fundamentals.',
       venue_id: classroom._id,
       organizer_id: organizerUser._id,
       event_date: '2026-12-05',
