@@ -470,10 +470,26 @@ export function compareEnvironments(localStats, cloudStats) {
 
 export function fmtMs(ms) {
   if (ms === null || ms === undefined || isNaN(ms)) return 'N/A';
+  if (ms < 0) return 'N/A';
+  if (ms < 0.001) return (ms * 1e6).toFixed(1) + ' ns';
+  if (ms < 0.01) return (ms * 1000).toFixed(2) + ' µs';
+  if (ms < 0.1) return (ms * 1000).toFixed(1) + ' µs';
+  if (ms < 1) return ms.toFixed(3) + ' ms';
   if (ms < 10) return ms.toFixed(2) + ' ms';
   if (ms < 100) return ms.toFixed(1) + ' ms';
   return Math.round(ms) + ' ms';
 }
+
+export function fmtPreciseMs(ms, decimals = 4) {
+  if (ms === null || ms === undefined || isNaN(ms) || ms < 0) return 'N/A';
+  return ms.toFixed(decimals) + ' ms';
+}
+
+export function fmtMicroseconds(ms) {
+  if (ms === null || ms === undefined || isNaN(ms) || ms < 0) return 'N/A';
+  return (ms * 1000).toFixed(2) + ' µs';
+}
+
 
 export function getSystemInfo() {
   return {

@@ -1,0 +1,33 @@
+DatasetTier,EventCount,TotalStoreRecords,Operation,ExecutionPlan,ColdExecMs,WarmMinMs,WarmMeanMs,WarmP50Ms,WarmP90Ms,WarmP95Ms,WarmP99Ms,WarmMaxMs,IndexedP50Ms,IndexSpeedup,BatchSize,TotalIterations
+Small,1000,2110,Fetch Approved Events (N+1 Populate + Sort),O(N) Filter -> N*2 Array Scans -> Quicksort,13.6014,0.0595,0.1064,0.1150,0.1431,0.1615,0.3257,0.4805,0.0130,8.8x,50,2500
+Small,1000,2110,"Fetch Events by Category (""Hackathon"")",O(N) Full Array Scan,0.1265,0.0035,0.0051,0.0039,0.0133,0.0137,0.0144,0.0145,0.0001,49.3x,2000,100000
+Small,1000,2110,Fetch Event Details by ID (Point Lookup),O(N) Array.prototype.find,0.1996,0.0052,0.0063,0.0053,0.0119,0.0120,0.0135,0.0146,0.0001,45.3x,2000,100000
+Small,1000,2110,Fetch Venues with Booked Dates (Nested Scan),O(V * E) Nested Loop Array Filter,2.4395,0.1831,0.1941,0.1900,0.2152,0.2227,0.2453,0.2466,0.0028,67.7x,2000,100000
+Small,1000,2110,Fetch Venue by ID,O(V) Venue Array Scan (10 venues),0.1098,0.0000,0.0000,0.0000,0.0001,0.0001,0.0003,0.0003,0.0000,1.3x,5000,250000
+Small,1000,2110,Fetch User Registrations (Passbook + Populate),O(R) Filter -> O(E) Event Find -> Populate,0.5336,0.0934,0.1066,0.1030,0.1298,0.1360,0.1448,0.1476,0.0012,88.8x,500,25000
+Small,1000,2110,Count Registrations for Event,O(R) Filter Array Length,0.1539,0.0033,0.0053,0.0036,0.0124,0.0129,0.0221,0.0303,0.0000,131.6x,5000,250000
+Small,1000,2110,Register User (Atomic Unique + Capacity Check),O(E) Find + O(R) Dupe Scan + Array Push,0.1508,0.0034,0.0051,0.0039,0.0118,0.0127,0.0136,0.0142,0.0000,143.8x,5000,250000
+Medium,10000,21010,Fetch Approved Events (N+1 Populate + Sort),O(N) Filter -> N*2 Array Scans -> Quicksort,0.6455,0.2177,0.3781,0.2969,0.5260,0.5512,1.2829,1.8393,0.0143,20.7x,500,25000
+Medium,10000,21010,"Fetch Events by Category (""Hackathon"")",O(N) Full Array Scan,0.1146,0.0471,0.0511,0.0503,0.0546,0.0567,0.0630,0.0653,0.0001,433.6x,5000,250000
+Medium,10000,21010,Fetch Event Details by ID (Point Lookup),O(N) Array.prototype.find,0.2442,0.0809,0.0845,0.0837,0.0883,0.0893,0.0911,0.0922,0.0001,701.9x,5000,250000
+Medium,10000,21010,Fetch Venues with Booked Dates (Nested Scan),O(V * E) Nested Loop Array Filter,2.9087,1.0750,1.2218,1.1662,1.2865,1.7908,1.8269,1.8320,0.0051,229.7x,2000,100000
+Medium,10000,21010,Fetch Venue by ID,O(V) Venue Array Scan (10 venues),0.0016,0.0000,0.0000,0.0000,0.0000,0.0000,0.0001,0.0001,0.0000,1.2x,5000,250000
+Medium,10000,21010,Fetch User Registrations (Passbook + Populate),O(R) Filter -> O(E) Event Find -> Populate,2.0998,0.6990,0.7794,0.7393,0.8806,1.1254,1.1901,1.2110,0.0011,680.9x,2000,100000
+Medium,10000,21010,Count Registrations for Event,O(R) Filter Array Length,0.1025,0.0323,0.0346,0.0339,0.0357,0.0372,0.0491,0.0517,0.0000,1070.6x,5000,250000
+Medium,10000,21010,Register User (Atomic Unique + Capacity Check),O(E) Find + O(R) Dupe Scan + Array Push,0.2974,0.1220,0.1332,0.1266,0.1477,0.1652,0.1950,0.2094,0.0000,3879.6x,5000,250000
+Large,100000,210010,Fetch Approved Events (N+1 Populate + Sort),O(N) Filter -> N*2 Array Scans -> Quicksort,5.5623,4.1575,4.7149,4.5185,5.2215,6.1081,6.2293,6.2452,0.0147,307.0x,500,25000
+Large,100000,210010,"Fetch Events by Category (""Hackathon"")",O(N) Full Array Scan,1.8197,0.9276,1.0416,1.0052,1.2221,1.2695,1.3411,1.3991,0.0001,8050.7x,5000,250000
+Large,100000,210010,Fetch Event Details by ID (Point Lookup),O(N) Array.prototype.find,2.4626,0.9605,1.0328,1.0241,1.0841,1.1083,1.1504,1.1644,0.0001,8183.5x,5000,250000
+Large,100000,210010,Fetch Venues with Booked Dates (Nested Scan),O(V * E) Nested Loop Array Filter,34.1438,29.4365,30.7055,30.6630,31.8027,32.2325,32.4228,32.4513,0.0052,5912.7x,2000,100000
+Large,100000,210010,Fetch Venue by ID,O(V) Venue Array Scan (10 venues),0.0028,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,1.1x,5000,250000
+Large,100000,210010,Fetch User Registrations (Passbook + Populate),O(R) Filter -> O(E) Event Find -> Populate,18.5336,13.7202,15.0632,14.9992,15.9668,16.1032,17.4378,17.8535,0.0011,13817.8x,2000,100000
+Large,100000,210010,Count Registrations for Event,O(R) Filter Array Length,1.8113,0.6927,0.7512,0.7176,0.7739,0.8069,1.4330,1.8888,0.0000,20921.0x,5000,250000
+Large,100000,210010,Register User (Atomic Unique + Capacity Check),O(E) Find + O(R) Dupe Scan + Array Push,2.3106,1.4043,1.5221,1.5129,1.6113,1.6246,1.7254,1.8118,0.0001,29054.8x,5000,250000
+Very Large,1000000,1300010,Fetch Approved Events (N+1 Populate + Sort),O(N) Filter -> N*2 Array Scans -> Quicksort,Omitted,N/A,N/A,N/A,N/A,N/A,N/A,N/A,0.0155,Safety Limit,500,25000
+Very Large,1000000,1300010,"Fetch Events by Category (""Hackathon"")",O(N) Full Array Scan,27.8136,26.2207,27.1722,26.8927,28.4235,30.4907,30.8394,30.8446,0.0001,210141.0x,5000,250000
+Very Large,1000000,1300010,Fetch Event Details by ID (Point Lookup),O(N) Array.prototype.find,28.3286,26.8205,27.7758,27.5196,28.8300,29.5870,29.7678,29.7786,0.0001,191795.7x,5000,250000
+Very Large,1000000,1300010,Fetch Venues with Booked Dates (Nested Scan),O(V * E) Nested Loop Array Filter,Omitted,N/A,N/A,N/A,N/A,N/A,N/A,N/A,0.0054,Safety Limit,2000,100000
+Very Large,1000000,1300010,Fetch Venue by ID,O(V) Venue Array Scan (10 venues),0.0014,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,1.2x,5000,250000
+Very Large,1000000,1300010,Fetch User Registrations (Passbook + Populate),O(R) Filter -> O(E) Event Find -> Populate,19.4882,15.8393,16.5146,16.5184,16.9769,17.0919,17.1403,17.1492,0.0002,71817.3x,5000,250000
+Very Large,1000000,1300010,Count Registrations for Event,O(R) Filter Array Length,3.4527,1.9787,2.1212,2.1041,2.2384,2.2704,2.4971,2.5673,0.0000,78937.4x,5000,250000
+Very Large,1000000,1300010,Register User (Atomic Unique + Capacity Check),O(E) Find + O(R) Dupe Scan + Array Push,4.5944,3.5578,3.8954,3.8592,4.2056,4.2295,4.3369,4.4220,0.0000,126953.7x,5000,250000
