@@ -5,6 +5,7 @@ import { Header } from './components/Header.jsx';
 import { StudentFeed } from './components/StudentFeed.jsx';
 import { MyRegistrations } from './components/MyRegistrations.jsx';
 import { VenueDirectory } from './components/VenueDirectory.jsx';
+import { LoginPage } from './components/LoginPage.jsx';
 import { CheckCircle2, AlertCircle, Info, Activity } from 'lucide-react';
 
 // Code-splitting non-critical routes and heavy modals to slash initial bundle size and maximize FCP/LCP
@@ -131,23 +132,14 @@ export default function App() {
       await refreshVenues();
       await refreshFeed();
 
-      // Check existing session or default to Student demo
+      // Check existing authenticated session
       let user = storage.getUser();
       if (user) {
-        // Validate with server that this user ID exists
         const verified = await api.getMe();
         if (!verified) {
           user = null;
         } else {
           user = verified;
-        }
-      }
-
-      if (!user) {
-        try {
-          user = await api.demoSwitch('Student');
-        } catch {
-          // If demo switch is not ready yet, continue
         }
       }
 
@@ -166,26 +158,31 @@ export default function App() {
     initApp();
   }, [refreshVenues, refreshFeed, refreshRegistrations, refreshMyEvents, refreshPendingEvents]);
 
+  // Auth Success Handler with role-based redirection
+  const handleAuthSuccess = (user) => {
+    setCurrentUser(user);
+    setAuthModalOpen(false);
+    addToast('success', `Welcome back, ${user.name}!`);
+    refreshRegistrations(user._id);
+
+    // Redirect to appropriate role dashboard
+    if (user.role === 'Student') {
+      setActiveTab('feed');
+    } else if (user.role === 'Organizer') {
+      refreshMyEvents();
+      setActiveTab('organizer');
+    } else if (user.role === 'Admin') {
+      refreshPendingEvents();
+      setActiveTab('admin');
+    }
+  };
+
   // Demo Switch Handler
   const handleDemoSwitch = async (role) => {
     try {
       const user = await api.demoSwitch(role);
-      setCurrentUser(user);
+      handleAuthSuccess(user);
       addToast('info', `Switched active persona to ${user.name} (${user.role})`);
-
-      await refreshVenues();
-      await refreshFeed();
-      await refreshRegistrations(user._id);
-
-      if (role === 'Student') {
-        setActiveTab('feed');
-      } else if (role === 'Organizer') {
-        await refreshMyEvents();
-        setActiveTab('organizer');
-      } else if (role === 'Admin') {
-        await refreshPendingEvents();
-        setActiveTab('admin');
-      }
     } catch (err) {
       addToast('error', err.message || 'Failed to switch demo persona.');
     }
@@ -196,7 +193,7 @@ export default function App() {
     setCurrentUser(null);
     setMyRegistrations([]);
     setRegisteredEventIds(new Set());
-    setActiveTab('feed');
+    setActiveTab('login');
     addToast('info', 'You have been signed out.');
   };
 
@@ -273,7 +270,7 @@ export default function App() {
         currentUser={currentUser}
         activeTab={activeTab}
         setActiveTab={handleSelectTab}
-        onOpenAuth={() => setAuthModalOpen(true)}
+        onOpenAuth={() => setActiveTab('login')}
         onLogout={handleLogout}
         onDemoSwitch={handleDemoSwitch}
         pendingCount={pendingEvents.length}
@@ -281,6 +278,14 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[500px]">
+        {activeTab === 'login' && (
+          <LoginPage
+            onSuccess={handleAuthSuccess}
+            onClose={() => setActiveTab('feed')}
+            isModal={false}
+          />
+        )}
+
         {activeTab === 'feed' && (
           <StudentFeed
             events={approvedEvents}
@@ -288,7 +293,7 @@ export default function App() {
             registeredEventIds={registeredEventIds}
             onRegister={handleRegister}
             onCancelRegistration={handleCancelRegistration}
-            onOpenAuth={() => setAuthModalOpen(true)}
+            onOpenAuth={() => setActiveTab('login')}
             loading={loadingFeed}
           />
         )}
@@ -342,9 +347,9 @@ export default function App() {
       <footer className="mt-auto border-t border-slate-200 bg-white py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-900">CampusEventHub</span>
+            <span className="font-extrabold text-slate-900 tracking-tight">EventSphere</span>
             <span>—</span>
-            <span>Campus Venue Booking & Event Management System</span>
+            <span>Event & Venue Management Platform</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -368,14 +373,7 @@ export default function App() {
           <AuthModal
             isOpen={authModalOpen}
             onClose={() => setAuthModalOpen(false)}
-            onSuccess={(user) => {
-              setCurrentUser(user);
-              addToast('success', `Welcome back, ${user.name}!`);
-              refreshRegistrations(user._id);
-              if (user.role === 'Organizer') refreshMyEvents();
-              if (user.role === 'Admin') refreshPendingEvents();
-            }}
-            onDemoSwitch={handleDemoSwitch}
+            onSuccess={handleAuthSuccess}
           />
         </Suspense>
       )}

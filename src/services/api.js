@@ -1,31 +1,80 @@
 /**
- * CampusEventHub Client API Service (JavaScript Edition)
+ * EventSphere Client API Service (JavaScript Edition)
  */
 
-const CURRENT_USER_KEY = 'campus_event_hub_user';
+const USER_KEY = 'eventsphere_auth_user';
+const TOKEN_KEY = 'eventsphere_auth_token';
+const LEGACY_USER_KEY = 'campus_event_hub_user';
 
 export const storage = {
   getUser() {
     try {
-      const data = localStorage.getItem(CURRENT_USER_KEY);
+      const data = localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY) || localStorage.getItem(LEGACY_USER_KEY);
       return data ? JSON.parse(data) : null;
     } catch {
       return null;
     }
   },
+
+  getToken() {
+    try {
+      return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || null;
+    } catch {
+      return null;
+    }
+  },
+
+  setSession(user, token, rememberMe = true) {
+    try {
+      const target = rememberMe ? localStorage : sessionStorage;
+      // Clear opposite storage
+      const opposite = rememberMe ? sessionStorage : localStorage;
+      opposite.removeItem(USER_KEY);
+      opposite.removeItem(TOKEN_KEY);
+
+      if (user) {
+        target.setItem(USER_KEY, JSON.stringify(user));
+        localStorage.setItem(LEGACY_USER_KEY, JSON.stringify(user));
+      } else {
+        localStorage.removeItem(USER_KEY);
+        sessionStorage.removeItem(USER_KEY);
+        localStorage.removeItem(LEGACY_USER_KEY);
+      }
+
+      if (token) {
+        target.setItem(TOKEN_KEY, token);
+      } else {
+        localStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(TOKEN_KEY);
+      }
+    } catch {
+      // Ignore storage errors in private browsing
+    }
+  },
+
   setUser(user) {
-    if (user) {
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(CURRENT_USER_KEY);
+    this.setSession(user, this.getToken(), true);
+  },
+
+  clearSession() {
+    try {
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(LEGACY_USER_KEY);
+      sessionStorage.removeItem(USER_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+    } catch {
+      // Ignore
     }
   },
 };
 
 async function apiRequest(endpoint, options = {}) {
+  const token = storage.getToken();
   const currentUser = storage.getUser();
   const headers = {
     'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(currentUser?._id ? { 'x-user-id': currentUser._id } : {}),
     ...(options.headers || {}),
   };
@@ -46,40 +95,56 @@ async function apiRequest(endpoint, options = {}) {
 
 export const api = {
   // Auth
-  async login(email, password) {
+  async login(email, password, rememberMe = true) {
     const res = await apiRequest('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    storage.setUser(res.user);
+    storage.setSession(res.user, res.token, rememberMe);
     return res.user;
   },
 
-  async register(name, email, password, role) {
+  async register(name, email, password, role, rememberMe = true) {
     const res = await apiRequest('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify({ name, email, password, role }),
     });
-    storage.setUser(res.user);
+    storage.setSession(res.user, res.token, rememberMe);
     return res.user;
   },
 
-  async googleAuth(payload) {
+  async googleAuth(payload, rememberMe = true) {
     const res = await apiRequest('/api/auth/google', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
-    storage.setUser(res.user);
+    storage.setSession(res.user, res.token, rememberMe);
     return res.user;
+  },
+
+  async forgotPassword(email) {
+    return await apiRequest('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async resetPassword(email, code, newPassword) {
+    return await apiRequest('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, code, newPassword }),
+    });
   },
 
   async getMe() {
     try {
       const res = await apiRequest('/api/auth/me');
-      storage.setUser(res.user);
+      if (res.user) {
+        storage.setUser(res.user);
+      }
       return res.user;
     } catch {
-      storage.setUser(null);
+      storage.clearSession();
       return null;
     }
   },
@@ -89,12 +154,12 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ role }),
     });
-    storage.setUser(res.user);
+    storage.setSession(res.user, res.token, true);
     return res.user;
   },
 
   logout() {
-    storage.setUser(null);
+    storage.clearSession();
   },
 
   // Venues

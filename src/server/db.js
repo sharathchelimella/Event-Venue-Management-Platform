@@ -246,6 +246,25 @@ class CampusMongoEngine {
     return user;
   }
 
+  async updateUserPassword(email, newPassword) {
+    if (this.isConnectedToMongo) {
+      const escaped = email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const user = await UserModel.findOneAndUpdate(
+        { email: new RegExp(`^${escaped}$`, 'i') },
+        { password: newPassword },
+        { new: true }
+      ).lean();
+      return user ? formatDoc(user) : null;
+    }
+    const userIndex = this.state.users.findIndex(
+      (u) => u.email.toLowerCase() === email.toLowerCase()
+    );
+    if (userIndex === -1) return null;
+    this.state.users[userIndex].password = newPassword;
+    this.saveSnapshot();
+    return this.state.users[userIndex];
+  }
+
   // ---- Venues ----
   async findVenues() {
     if (this.isConnectedToMongo) {

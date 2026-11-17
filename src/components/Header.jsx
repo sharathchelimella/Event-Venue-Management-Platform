@@ -16,14 +16,14 @@ export const Header = ({
         <div className="flex items-center justify-between h-16 gap-8">
           {/* Zone 1: Brand Wordmark */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-sm tracking-tighter">
-              CE
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-black text-sm tracking-tighter shadow-md shadow-indigo-500/20">
+              ES
             </div>
             <button
               onClick={() => setActiveTab('feed')}
-              className="text-left font-bold text-lg tracking-tight text-slate-900 hover:text-slate-700 whitespace-nowrap shrink-0"
+              className="text-left font-extrabold text-lg tracking-tight text-slate-900 hover:text-indigo-600 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5"
             >
-              CampusEventHub
+              <span>EventSphere</span>
             </button>
           </div>
 

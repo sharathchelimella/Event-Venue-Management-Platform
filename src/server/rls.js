@@ -2,7 +2,45 @@
  * CampusEventHub Row-Level Security (RLS) Engine & Audit System (JavaScript Edition)
  */
 
+import crypto from 'crypto';
 import { db } from './db.js';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'eventsphere_secure_jwt_token_secret_key_2026';
+
+// Cryptographic JWT Signer (HS256)
+export function signToken(payload, expiresInSeconds = 7 * 24 * 3600) {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
+  const fullPayload = { ...payload, exp, iat: Math.floor(Date.now() / 1000) };
+
+  const encode = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
+  const h64 = encode(header);
+  const p64 = encode(fullPayload);
+  const sig = crypto.createHmac('sha256', JWT_SECRET).update(`${h64}.${p64}`).digest('base64url');
+
+  return `${h64}.${p64}.${sig}`;
+}
+
+// Cryptographic JWT Verifier
+export function verifyToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [h64, p64, sig] = parts;
+
+  const expectedSig = crypto.createHmac('sha256', JWT_SECRET).update(`${h64}.${p64}`).digest('base64url');
+  if (sig !== expectedSig) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(p64, 'base64url').toString('utf8'));
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      return null; // Expired token
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
 
 // In-memory security audit log
 const auditLogs = [];
@@ -99,8 +137,32 @@ export const RLS_POLICIES = [
   },
 ];
 
-// Middleware: Extract Authentication Context
+// Middleware: Extract Authentication Context with Cryptographic Verification
 export async function rlsAuthContext(req, _res, next) {
+  // 1. Check Bearer token in Authorization header
+  const authHeader = req.headers.authorization;
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7).trim();
+    const verified = verifyToken(token);
+    if (verified && verified.uid) {
+      try {
+        const user = await db.findUserById(verified.uid);
+        if (user) {
+          req.auth = {
+            uid: user._id,
+            role: user.role,
+            user,
+            tokenVerified: true,
+          };
+          return next();
+        }
+      } catch {
+        // Fall through to legacy check
+      }
+    }
+  }
+
+  // 2. Legacy / dev fallback: x-user-id header
   const userIdHeader = req.headers['x-user-id'];
   if (typeof userIdHeader === 'string' && userIdHeader.trim()) {
     try {
@@ -110,6 +172,7 @@ export async function rlsAuthContext(req, _res, next) {
           uid: user._id,
           role: user.role,
           user,
+          tokenVerified: false,
         };
       }
     } catch {

@@ -12,9 +12,13 @@ import {
   getAuditLogs,
   RLS_POLICIES,
   simulateRLSCheck,
+  signToken,
 } from './rls.js';
 
 export const apiRouter = Router();
+
+// In-memory verification code registry for password recovery: email -> { code, expiresAt }
+const passwordResetCodes = new Map();
 
 // Apply RLS Auth Context extractor to all requests
 apiRouter.use(rlsAuthContext);
@@ -66,7 +70,8 @@ apiRouter.post('/auth/register', async (req, res) => {
     });
 
     const { password: _, ...userSafe } = newUser;
-    return res.status(201).json({ user: userSafe });
+    const token = signToken({ uid: newUser._id, role: newUser.role, email: newUser.email });
+    return res.status(201).json({ user: userSafe, token });
   } catch (err) {
     if (err.code === 11000) {
       return res.status(409).json({ error: 'An account with this email already exists.' });
@@ -107,7 +112,8 @@ apiRouter.post('/auth/login', async (req, res) => {
     });
 
     const { password: _, ...userSafe } = user;
-    return res.json({ user: userSafe });
+    const token = signToken({ uid: user._id, role: user.role, email: user.email });
+    return res.json({ user: userSafe, token });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Login failed.' });
   }
@@ -168,7 +174,8 @@ apiRouter.post('/auth/google', async (req, res) => {
       });
 
       const { password: _, ...userSafe } = user;
-      return res.json({ user: userSafe, isNewUser: false });
+      const token = signToken({ uid: user._id, role: user.role, email: user.email });
+      return res.json({ user: userSafe, token, isNewUser: false });
     }
 
     // Register new user via Google
@@ -194,10 +201,99 @@ apiRouter.post('/auth/google', async (req, res) => {
     });
 
     const { password: _, ...userSafe } = newUser;
-    return res.status(201).json({ user: userSafe, isNewUser: true });
+    const token = signToken({ uid: newUser._id, role: newUser.role, email: newUser.email });
+    return res.status(201).json({ user: userSafe, token, isNewUser: true });
   } catch (err) {
     console.error('[CampusEventHub] Google auth error:', err);
     return res.status(500).json({ error: err.message || 'Google authentication failed.' });
+  }
+});
+
+// POST /api/auth/forgot-password (Functional recovery code generation)
+apiRouter.post('/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) {
+      return res.status(400).json({ error: 'Email address is required.' });
+    }
+
+    const user = await db.findUserByEmail(email.trim());
+    if (!user) {
+      return res.status(404).json({ error: 'No account registered with this email address.' });
+    }
+
+    // Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    passwordResetCodes.set(email.trim().toLowerCase(), {
+      code,
+      expiresAt: Date.now() + 15 * 60 * 1000, // 15 mins
+    });
+
+    logAudit({
+      actor: user.name,
+      actorRole: user.role,
+      action: 'PASSWORD_RESET_REQUESTED',
+      collection: 'users',
+      outcome: 'ALLOWED',
+      predicate: 'email == registered',
+    });
+
+    return res.json({
+      message: 'Password recovery code generated successfully.',
+      code, // Returned for instant interactive testing in campus demo
+      expiresIn: '15 minutes',
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to request password reset.' });
+  }
+});
+
+// POST /api/auth/reset-password (Functional password update)
+apiRouter.post('/auth/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body || {};
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ error: 'Email, verification code, and new password are required.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+    }
+
+    const emailKey = email.trim().toLowerCase();
+    const record = passwordResetCodes.get(emailKey);
+    if (!record || record.code !== code.trim() || record.expiresAt < Date.now()) {
+      logAudit({
+        actor: email,
+        actorRole: 'Guest',
+        action: 'PASSWORD_RESET_FAILED',
+        collection: 'users',
+        outcome: 'DENIED',
+        predicate: 'code == valid_and_unexpired',
+        reason: 'Invalid or expired password reset verification code.',
+      });
+      return res.status(400).json({ error: 'Invalid or expired verification code.' });
+    }
+
+    const updated = await db.updateUserPassword(emailKey, newPassword);
+    if (!updated) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    passwordResetCodes.delete(emailKey);
+
+    logAudit({
+      actor: updated.name,
+      actorRole: updated.role,
+      action: 'PASSWORD_RESET_SUCCESS',
+      collection: 'users',
+      outcome: 'ALLOWED',
+      predicate: 'true',
+    });
+
+    return res.json({ message: 'Password has been reset successfully. You can now sign in with your new password.' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to reset password.' });
   }
 });
 
@@ -236,7 +332,8 @@ apiRouter.post('/auth/demo-switch', async (req, res) => {
     });
 
     const { password: _, ...userSafe } = user;
-    return res.json({ user: userSafe });
+    const token = signToken({ uid: user._id, role: user.role, email: user.email });
+    return res.json({ user: userSafe, token });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Demo switch failed.' });
   }
