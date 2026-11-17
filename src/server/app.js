@@ -1,6 +1,9 @@
 import express from 'express';
+import dotenv from 'dotenv';
 import { apiRouter } from './routes.js';
 import { connectAndSeedDB } from './seed.js';
+
+dotenv.config();
 
 let initialized = false;
 

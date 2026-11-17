@@ -1,70 +1,98 @@
-# CampusEventHub — Campus Venue & Event Management System (MVP)
+# CampusEventHub — Campus Venue & Event Management System
 
-A modern, full-stack campus venue booking and event management platform built with React, Vite, Tailwind CSS, Express, and MongoDB/Mongoose. Designed for campus communities with strict Role-Based Access Control (RBAC) and Row-Level Security (RLS).
+A production-grade, full-stack campus venue booking and event management platform built with React 19, Vite, Tailwind CSS, Express, and MongoDB/Mongoose. Designed for campus communities with strict Role-Based Access Control (RBAC), Row-Level Security (RLS), and database-level concurrency guards.
 
 ---
 
-## Features
+## Key Features & Capabilities
 
-- **Role-Based Workflows**:
-  - **Student / Attendee**: Discover approved campus hackathons, standup comedy nights, seminars, and cultural festivals. Real-time seat availability meters with 1-click registration, duplicate booking prevention, and personal registrations passbook with cancellation options.
-  - **Event Organizer**: Check facility capacities and existing schedules, submit new venue booking requests with real-time double-booking conflict prevention, track request statuses (`Pending`, `Approved`, `Rejected`), and view/export full attendee rosters (names, emails, registration timestamps).
-  - **Campus Administrator**: One-click approval queue (approvals auto-publish to the student feed; rejections immediately release the venue date slot), facility management (add venues, adjust capacities), and an interactive **Row-Level Security (RLS) Policy & Audit Console**.
+### 1. Student / Attendee Experience
+- **Interactive Event Discovery**: Browse campus hackathons, standup comedy nights, research seminars, and cultural festivals with category filters and real-time text search.
+- **Visual Capacity & Seat Meters**: Real-time capacity progress indicators showing exact seats remaining and percentage booked.
+- **Atomic 1-Click Reservation**: Instant seat booking with automatic duplicate registration prevention and "Housefull / Sold Out" state locking.
+- **Personal Registrations Passbook**: Dedicated passbook view to inspect reserved passes, event details, venue locations, and 1-click self-service cancellation.
 
-- **Database-Level Integrity & Guards**:
-  - **Double-Booking Prevention**: Partial Unique Index on `{ venue_id: 1, event_date: 1 }` where `status != 'Rejected'`.
-  - **Duplicate Registration Prevention**: Compound Unique Index on `{ event_id: 1, user_id: 1 }`.
-  - **Atomic Capacity Guard**: Atomic `findOneAndUpdate` query with `{ registered_count: { $lt: max_capacity } }` and `$inc: { registered_count: 1 }` preventing race conditions and locking the "Housefull / Sold Out" state.
-  - **Row-Level Security (RLS)**: Server-side query scoping, mutation guards, and real-time security audit logging.
+### 2. Event Organizer Portal
+- **Facility Availability & Schedule Inspection**: Real-time venue directory displaying auditorium capacities, facilities, and booked calendar dates.
+- **Conflict-Free Booking Request Submission**: Submit venue reservation requests with date validation and real-time double-booking conflict prevention (blocks dates already occupied or in the past).
+- **Request Lifecycle Tracking**: Track event submission statuses across `Pending`, `Approved`, and `Rejected` states with organizer summary metrics.
+- **Private Attendee Contact Roster**: Securely view attendee names, emails, and registration timestamps for organized events, complete with 1-click **CSV Export**.
 
-- **Design & UI**:
-  - Slate Minimalist aesthetic adhering to SaaS & Dashboard guidelines.
-  - Password visibility toggle (Show/Hide) with eye icon on sign in and account registration.
-  - Zero-pill metadata typography with tabular numerals (`tabular-nums font-mono`).
+### 3. Campus Administrator Management & Security Console
+- **One-Click Decision Queue**: Review pending venue booking requests. Approvals auto-publish events directly to the student feed; rejections immediately release the date slot.
+- **Facility Management**: Register new campus auditoriums/halls and perform live inline capacity adjustments.
+- **Interactive Row-Level Security (RLS) Console**:
+  - **Policy Inspector**: Inspect active database security policies across collections (`venues`, `events`, `registrations`).
+  - **Live Audit Log Stream**: Real-time telemetry monitoring actor permissions, actions, outcomes (`PERMITTED` vs `DENIED`), and policy predicates.
+  - **Policy Simulator**: Test access control evaluations on demand across roles (`Student`, `Organizer`, `Admin`, `Guest`) and operations.
+
+### 4. Database Concurrency & Integrity Guards
+- **Dual Persistence Architecture**: Connects seamlessly to remote **MongoDB Atlas** clusters via `MONGODB_URI` with Mongoose schemas and models, with automatic fallback to an embedded durable JSON store (`.campus_data.json`) for zero-dependency offline development.
+- **Partial Unique Index Guard**: Enforced partial unique constraint on `{ venue_id: 1, event_date: 1 }` where `status != 'Rejected'`, preventing date double-booking.
+- **Compound Unique Index Guard**: Enforced compound constraint on `{ event_id: 1, user_id: 1 }`, guaranteeing single-ticket limits per attendee.
+- **Atomic Capacity Guard**: High-concurrency `findOneAndUpdate` query with `{ registered_count: { $lt: max_capacity } }` and `$inc: { registered_count: 1 }`, eliminating overbooking race conditions under high traffic spikes.
+
+### 5. Performance, Telemetry & Web Vitals
+- **Core Web Vitals HUD**: Embedded real-time telemetry widget tracking FCP, LCP, CLS, INP, and TTFB, along with memory usage and interaction latency benchmarking.
+- **Optimized Bundling**: Route-level code-splitting with React `lazy` and `Suspense`, zero-CLS layout skeletons, and manual vendor chunking.
+- **Built-in Benchmark Suite**: CLI test harness covering load, stress, spike, endurance, and database indexing benchmarks.
 
 ---
 
 ## Tech Stack
 
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, Lucide React icons
-- **Backend**: Express 4.x, Node.js (`tsx`)
-- **Database & ODM**: MongoDB & Mongoose ODM (embedded high-integrity store with durable JSON snapshot + optional remote MongoDB connection via `MONGODB_URI`)
-- **Security**: Custom Row-Level Security (RLS) middleware & Audit Logger
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend Framework** | React 19, TypeScript / JSX, Vite 8 |
+| **Styling & Icons** | Tailwind CSS v4, Lucide React |
+| **Backend Runtime** | Node.js (v18+), Express 4.x |
+| **Database & ODM** | MongoDB & Mongoose ODM (Atlas + Embedded Snapshot fallback) |
+| **Security Layer** | Row-Level Security (RLS) middleware & Audit Logger |
+| **Telemetry & Observability** | Custom Core Web Vitals HUD & Performance Benchmark Suite |
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
+- [Node.js](https://nodejs.org/) (v18 or higher)
 - npm
 
-### Installation
+### 1. Installation
+Clone the repository and install dependencies using `--legacy-peer-deps`:
 
-1. Clone the repository:
 ```bash
 git clone <YOUR_GITHUB_REPO_URL>
-cd campus-event-hub
+cd campuseventhub
+npm install --legacy-peer-deps
 ```
 
-2. Install dependencies:
-```bash
-npm install
+### 2. Environment Configuration
+Create a `.env` file in the project root:
+
+```env
+PORT=3000
+NODE_ENV=development
+
+# Optional: Remote MongoDB Atlas Connection String
+# If omitted or offline, the app seamlessly runs on the high-integrity embedded store.
+MONGODB_URI="mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>?retryWrites=true&w=majority"
 ```
 
-3. Start the development server:
+### 3. Run the Development Server
+Start the unified Vite and Express development server:
+
 ```bash
 npm run dev
 ```
-Open `http://localhost:3000` in your browser.
 
-4. Build for production:
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### 4. Build & Production Run
+To create an optimized production build and start the server:
+
 ```bash
 npm run build
-```
-
-5. Run full-stack production server:
-```bash
 npm run start
 ```
 
@@ -72,40 +100,87 @@ npm run start
 
 ## Pre-Seeded Demonstration Accounts
 
-For instant testing and evaluation, the database auto-seeds the following accounts on boot:
+For instant evaluation, the database auto-seeds test accounts on initial boot:
 
 | Role | Email | Password | Permissions |
 | :--- | :--- | :--- | :--- |
-| **Student** | `alex.student@campus.edu` | `password123` | Browse events, reserve seats, cancel personal passes |
-| **Organizer** | `priya.organizer@campus.edu` | `password123` | Request venues, view submitted events, inspect/export attendee rosters |
-| **Admin** | `dean.admin@campus.edu` | `adminpassword` | Approve/reject events, add venues, modify capacities, audit RLS policies |
+| **Student** | `alex.student@campus.edu` | `password123` | Discover events, reserve seats, view passbook, cancel personal passes |
+| **Organizer** | `priya.organizer@campus.edu` | `password123` | Request venues, track booking statuses, view & export attendee rosters |
+| **Admin** | `dean.admin@campus.edu` | `adminpassword` | Approve/reject events, add/edit venues, audit RLS policies & logs |
+
+> **Tip:** You can switch between demo personas instantly in the UI with 1 click using the demo switch controls.
 
 ---
 
-## API Endpoints Overview
+## REST API Reference
 
+### Authentication & Sessions
 | Method | Endpoint | Access Role | Description |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Public | Create a Student or Organizer account |
-| `POST` | `/api/auth/login` | Public | Authenticate user |
-| `GET` | `/api/auth/me` | Authenticated | Fetch current user session |
-| `GET` | `/api/venues` | Public | List all venues and booked dates |
-| `POST` | `/api/venues` | Admin | Create a new campus venue |
-| `PATCH` | `/api/venues/:id` | Admin | Update venue capacity or name |
-| `GET` | `/api/events/approved` | Public | Fetch approved upcoming events |
-| `POST` | `/api/events` | Organizer / Admin | Submit a venue booking request |
-| `GET` | `/api/events/my-events` | Organizer / Admin | View organizer's submitted events |
-| `GET` | `/api/admin/events/pending`| Admin | Review pending booking requests |
-| `PATCH` | `/api/admin/events/:id` | Admin | Approve or reject booking request |
-| `POST` | `/api/events/:id/register`| Authenticated | Register a seat (atomic capacity check) |
-| `DELETE`| `/api/events/:id/register`| Authenticated | Cancel personal seat reservation |
-| `GET` | `/api/users/registrations` | Authenticated | View current user's registered passes |
-| `GET` | `/api/events/:id/registrations` | Organizer / Admin | View private attendee contact roster (CSV exportable) |
-| `GET` | `/api/admin/rls/policies` | Admin | View active Row-Level Security rules |
-| `GET` | `/api/admin/rls/audit-logs` | Admin | Live security audit logs |
-| `POST` | `/api/admin/rls/simulate` | Admin | Test RLS policy outcomes across personas |
+| `POST` | `/api/auth/register` | Public | Register a new Student or Organizer account |
+| `POST` | `/api/auth/login` | Public | Authenticate user credentials and return session |
+| `GET` | `/api/auth/me` | Authenticated | Retrieve current user profile and session data |
+
+### Venues & Facilities
+| Method | Endpoint | Access Role | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/venues` | Public | List all venues, locations, capacities, and booked dates |
+| `POST` | `/api/venues` | Admin | Register a new campus venue |
+| `PATCH` | `/api/venues/:id` | Admin | Update venue capacity or facility name |
+
+### Events & Bookings
+| Method | Endpoint | Access Role | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/events/approved` | Public | Fetch approved upcoming events for the student feed |
+| `POST` | `/api/events` | Organizer / Admin | Submit a new venue reservation request |
+| `GET` | `/api/events/my-events` | Organizer / Admin | List events submitted by the current organizer |
+| `GET` | `/api/events/:id` | Authenticated | Retrieve single event detail with populated venue and organizer |
+| `GET` | `/api/admin/events/pending` | Admin | Retrieve pending event requests awaiting administrative approval |
+| `PATCH` | `/api/admin/events/:id` | Admin | Approve or reject venue booking request |
+
+### Registrations & Attendees
+| Method | Endpoint | Access Role | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/events/:id/register` | Authenticated | Reserve a seat (atomic capacity guard & duplicate check) |
+| `DELETE` | `/api/events/:id/register` | Authenticated | Cancel personal seat reservation and release capacity |
+| `GET` | `/api/users/registrations` | Authenticated | Fetch current student's reserved tickets |
+| `GET` | `/api/events/:id/registrations` | Organizer / Admin | Fetch private attendee roster for an event (CSV exportable) |
+
+### Row-Level Security (RLS) & Governance
+| Method | Endpoint | Access Role | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/admin/rls/policies` | Admin | Inspect active Row-Level Security policy definitions |
+| `GET` | `/api/admin/rls/audit-logs` | Admin | Stream live security audit logs |
+| `POST` | `/api/admin/rls/simulate` | Admin | Simulate policy evaluation across roles and actions |
+
+---
+
+## Automated Benchmark Suite
+
+CampusEventHub includes benchmarking scripts to validate performance under simulated load:
+
+```bash
+# Core Web Vitals telemetry audit
+npm run benchmark
+
+# Database & persistence latency benchmark
+npm run benchmark:db
+
+# High-concurrency load testing
+npm run benchmark:load
+
+# Database throughput and index scaling
+npm run benchmark:database
+
+# Concurrency stress & race condition testing
+npm run benchmark:stress
+
+# Run all benchmarks
+npm run benchmark:all
+```
 
 ---
 
 ## License
-Apache-2.0
+
+Distributed under the Apache-2.0 License.

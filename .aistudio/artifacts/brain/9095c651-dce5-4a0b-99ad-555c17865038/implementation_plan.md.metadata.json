@@ -1,6 +1,0 @@
-{
-  "summary":  "Comprehensive load testing architecture and latency breakdown plan covering 10 to 200 concurrent users across 100-1,000 requests, warm-up phases, successful and failed HTTP endpoints, percentiles (p50, p95, p99), error rates, throughput, and comparison between local loopback and live Cloud Run WAN latency.",
-  "updatedAt":  "2026-11-01T18:11:16.056855031Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}

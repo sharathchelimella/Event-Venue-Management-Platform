@@ -7,3 +7,4 @@ coverage/
 .env*
 !.env.example
 .campus_data.json
+.aistudio/
