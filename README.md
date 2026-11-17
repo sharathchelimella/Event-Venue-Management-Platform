@@ -7,6 +7,7 @@ A production-grade, full-stack campus venue booking and event management platfor
 ## Key Features & Capabilities
 
 ### 1. Student / Attendee Experience
+- **Google Sign-In & Instant Authentication**: Sign in or create an account with 1-click via Google accounts or campus email credentials, with profile avatar rendering.
 - **Interactive Event Discovery**: Browse campus hackathons, standup comedy nights, research seminars, and cultural festivals with category filters and real-time text search.
 - **Visual Capacity & Seat Meters**: Real-time capacity progress indicators showing exact seats remaining and percentage booked.
 - **Atomic 1-Click Reservation**: Instant seat booking with automatic duplicate registration prevention and "Housefull / Sold Out" state locking.
@@ -77,6 +78,9 @@ NODE_ENV=development
 # Optional: Remote MongoDB Atlas Connection String
 # If omitted or offline, the app seamlessly runs on the high-integrity embedded store.
 MONGODB_URI="mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>?retryWrites=true&w=majority"
+
+# Optional: Google OAuth 2.0 Client ID for 1-click Google Sign-In SDK
+VITE_GOOGLE_CLIENT_ID="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
 ```
 
 ### 3. Run the Development Server
@@ -119,6 +123,7 @@ For instant evaluation, the database auto-seeds test accounts on initial boot:
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/auth/register` | Public | Register a new Student or Organizer account |
 | `POST` | `/api/auth/login` | Public | Authenticate user credentials and return session |
+| `POST` | `/api/auth/google` | Public | Authenticate or sign up with Google account / OAuth token |
 | `GET` | `/api/auth/me` | Authenticated | Retrieve current user profile and session data |
 
 ### Venues & Facilities

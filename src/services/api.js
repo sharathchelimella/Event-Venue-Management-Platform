@@ -64,6 +64,15 @@ export const api = {
     return res.user;
   },
 
+  async googleAuth(payload) {
+    const res = await apiRequest('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    storage.setUser(res.user);
+    return res.user;
+  },
+
   async getMe() {
     try {
       const res = await apiRequest('/api/auth/me');

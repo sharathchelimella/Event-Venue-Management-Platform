@@ -20,8 +20,11 @@ const DATA_FILE = path.resolve(process.cwd(), '.campus_data.json');
 export const userSchema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: false },
   role: { type: String, enum: ['Student', 'Organizer', 'Admin'], required: true },
+  avatar: { type: String, default: '' },
+  googleId: { type: String, default: '' },
+  authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -210,8 +213,11 @@ class CampusMongoEngine {
       const user = await UserModel.create({
         name: data.name,
         email: data.email.toLowerCase(),
-        password: data.password,
-        role: data.role,
+        password: data.password || `google_${Math.random().toString(36).substring(2, 12)}`,
+        role: data.role || 'Student',
+        avatar: data.avatar || '',
+        googleId: data.googleId || '',
+        authProvider: data.authProvider || 'local',
       });
       return formatDoc(user);
     }
@@ -226,7 +232,13 @@ class CampusMongoEngine {
     }
     const user = {
       _id: this.generateId(),
-      ...data,
+      name: data.name,
+      email: data.email.toLowerCase(),
+      password: data.password || `google_${Math.random().toString(36).substring(2, 12)}`,
+      role: data.role || 'Student',
+      avatar: data.avatar || '',
+      googleId: data.googleId || '',
+      authProvider: data.authProvider || 'local',
       createdAt: new Date().toISOString(),
     };
     this.state.users.push(user);

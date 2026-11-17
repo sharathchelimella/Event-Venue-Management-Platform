@@ -113,6 +113,94 @@ apiRouter.post('/auth/login', async (req, res) => {
   }
 });
 
+// Helper to decode Google credential JWT payload
+function parseGoogleJwt(token) {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+// POST /api/auth/google
+apiRouter.post('/auth/google', async (req, res) => {
+  try {
+    const { credential, email, name, role, avatar, googleId } = req.body || {};
+
+    let userEmail = email;
+    let userName = name;
+    let userAvatar = avatar;
+    let userGoogleId = googleId;
+
+    if (credential && typeof credential === 'string') {
+      const decoded = parseGoogleJwt(credential);
+      if (decoded && decoded.email) {
+        userEmail = decoded.email;
+        userName = userName || decoded.name;
+        userAvatar = userAvatar || decoded.picture;
+        userGoogleId = userGoogleId || decoded.sub;
+      }
+    }
+
+    if (!userEmail) {
+      return res.status(400).json({ error: 'Valid Google email or credential token is required.' });
+    }
+
+    userEmail = userEmail.trim().toLowerCase();
+    userName = (userName || userEmail.split('@')[0]).trim();
+
+    // Check if user already exists
+    let user = await db.findUserByEmail(userEmail);
+
+    if (user) {
+      logAudit({
+        actor: user.name,
+        actorRole: user.role,
+        action: 'LOGIN_GOOGLE_SUCCESS',
+        collection: 'users',
+        outcome: 'ALLOWED',
+        predicate: 'google_account_auth == true',
+      });
+
+      const { password: _, ...userSafe } = user;
+      return res.json({ user: userSafe, isNewUser: false });
+    }
+
+    // Register new user via Google
+    const userRole = role && ['Student', 'Organizer'].includes(role) ? role : 'Student';
+
+    const newUser = await db.createUser({
+      name: userName,
+      email: userEmail,
+      password: `google_oauth_${Math.random().toString(36).substring(2, 15)}`,
+      role: userRole,
+      avatar: userAvatar || '',
+      googleId: userGoogleId || '',
+      authProvider: 'google',
+    });
+
+    logAudit({
+      actor: newUser.name,
+      actorRole: newUser.role,
+      action: 'REGISTER_GOOGLE_SUCCESS',
+      collection: 'users',
+      outcome: 'ALLOWED',
+      predicate: 'google_oauth == true',
+    });
+
+    const { password: _, ...userSafe } = newUser;
+    return res.status(201).json({ user: userSafe, isNewUser: true });
+  } catch (err) {
+    console.error('[CampusEventHub] Google auth error:', err);
+    return res.status(500).json({ error: err.message || 'Google authentication failed.' });
+  }
+});
+
 // GET /api/auth/me
 apiRouter.get('/auth/me', requireAuth, async (req, res) => {
   try {

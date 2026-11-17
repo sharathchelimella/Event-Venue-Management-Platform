@@ -90,8 +90,27 @@ export const Header = ({
           <div className="flex items-center gap-3 shrink-0">
             {currentUser ? (
               <div className="flex items-center gap-3">
+                {currentUser.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    className="w-8 h-8 rounded-full border border-slate-200 object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold uppercase">
+                    {currentUser.name ? currentUser.name.charAt(0) : 'U'}
+                  </div>
+                )}
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs font-semibold text-slate-900">{currentUser.name}</div>
+                  <div className="text-xs font-semibold text-slate-900 flex items-center justify-end gap-1.5">
+                    <span>{currentUser.name}</span>
+                    {currentUser.authProvider === 'google' && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                        Google
+                      </span>
+                    )}
+                  </div>
                   <div className="text-[11px] text-slate-500 font-mono tracking-tight">{currentUser.role}</div>
                 </div>
                 <button
