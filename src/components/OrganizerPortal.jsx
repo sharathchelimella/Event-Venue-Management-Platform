@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { AttendeeModal } from './AttendeeModal.jsx';
 import { VenueDetailModal } from './VenueDetailModal.jsx';
+import { AiEventPlanner } from './AiEventPlanner.jsx';
 import {
   EVENT_POSTER_PRESETS,
   CATEGORY_THEMES,
@@ -37,7 +38,17 @@ export const OrganizerPortal = ({
   onRefreshEvents,
   onRefreshVenues,
   initialVenueId = null,
+  initialSubTab = 'programs',
 }) => {
+  // Navigation Sub-Tab State: 'programs' | 'ai-planner'
+  const [organizerTab, setOrganizerTab] = useState(initialSubTab || 'programs');
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setOrganizerTab(initialSubTab);
+    }
+  }, [initialSubTab]);
+
   // Form fields
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Hackathon');
@@ -230,6 +241,38 @@ export const OrganizerPortal = ({
     }
   };
 
+  const handleSubmitFromAiPlan = (bookingData) => {
+    if (!bookingData) return;
+    if (bookingData.title) setTitle(bookingData.title);
+    if (bookingData.category) {
+      const validCats = [
+        'Hackathon',
+        'Standup Comedy',
+        'Seminar',
+        'Cultural Show',
+        'Workshop',
+        'Conference',
+        'Sports',
+        'Other',
+      ];
+      const matched =
+        validCats.find((c) => c.toLowerCase() === bookingData.category.toLowerCase()) || 'Other';
+      setCategory(matched);
+    }
+    if (bookingData.description) setDescription(bookingData.description);
+    if (bookingData.venueId) setVenueId(bookingData.venueId);
+    if (bookingData.eventDate) setEventDate(bookingData.eventDate);
+    if (bookingData.eventTime) setEventTime(bookingData.eventTime);
+    if (bookingData.tags && Array.isArray(bookingData.tags)) {
+      setTagsInput(bookingData.tags.join(', '));
+    }
+    setOrganizerTab('programs');
+    setFormSuccess(
+      '✨ Booking request pre-filled from your AI Plan! Review details below and click Submit to send to Administrator for approval.'
+    );
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const previewTheme = CATEGORY_THEMES[category] || CATEGORY_THEMES['Other'];
   const previewPoster = posterImage || getEventPoster({ category });
 
@@ -292,20 +335,62 @@ export const OrganizerPortal = ({
             <p className="text-[11px] text-slate-400 mt-0.5">Created by your club</p>
           </div>
         </div>
+
+        {/* Navigation Sub-Tabs */}
+        <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={() => setOrganizerTab('programs')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              organizerTab === 'programs'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Programs & Booking Requests</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOrganizerTab('ai-planner')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              organizerTab === 'ai-planner'
+                ? 'bg-linear-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-600/25'
+                : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
+            <span>✨ AI Event Planner & Recommendations</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Venue Booking Request Form & Poster Studio (6 cols) */}
-        <div className="lg:col-span-6 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <PlusCircle className="w-4 h-4 text-slate-900" />
-              <h3 className="text-sm font-bold text-slate-900">Create Event & Book Venue</h3>
+      {organizerTab === 'ai-planner' ? (
+        <AiEventPlanner
+          venues={venues}
+          myEvents={myEvents}
+          onSubmitAsBookingRequest={handleSubmitFromAiPlan}
+          onRefreshEvents={onRefreshEvents}
+        />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Venue Booking Request Form & Poster Studio (6 cols) */}
+          <div className="lg:col-span-6 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <PlusCircle className="w-4 h-4 text-slate-900" />
+                <h3 className="text-sm font-bold text-slate-900">Create Event & Book Venue</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOrganizerTab('ai-planner')}
+                className="text-[11px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Sparkles className="w-3 h-3 text-indigo-500" />
+                <span>Use AI Planner</span>
+              </button>
             </div>
-            <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
-              Step 1 of Approval
-            </span>
-          </div>
 
           {formError && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2 text-xs text-rose-800">
@@ -810,6 +895,7 @@ export const OrganizerPortal = ({
           )}
         </div>
       </div>
+      )}
 
       {/* Edit Event Modal */}
       {editingEvent && (

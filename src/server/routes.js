@@ -15,6 +15,7 @@ import {
   signToken,
 } from './rls.js';
 import { sendAdminContactNotification } from './email.js';
+import { generateEventPlan, rankVenuesForEvent } from './aiService.js';
 
 export const apiRouter = Router();
 
@@ -1258,5 +1259,166 @@ apiRouter.post('/admin/events', requireRole(['Admin']), async (req, res) => {
       });
     }
     return res.status(500).json({ error: err.message || 'Failed to publish event.' });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 12. AI Event Suggestion & Planning Assistant
+// -----------------------------------------------------------------------------
+
+// POST /api/ai/event-plan - Generate personalized AI event plan (Mode A or Mode B)
+apiRouter.post('/ai/event-plan', requireRole(['Organizer', 'Admin']), async (req, res) => {
+  try {
+    const { preferences = {}, existingEventId } = req.body || {};
+    let existingEvent = null;
+
+    if (existingEventId) {
+      existingEvent = await db.findEventById(existingEventId);
+      if (!existingEvent) {
+        return res.status(404).json({ error: 'Assigned event not found.' });
+      }
+
+      // Check if organizer owns this event (Admins can plan any event)
+      if (req.auth.role === 'Organizer') {
+        const organizerIdStr =
+          typeof existingEvent.organizer_id === 'object'
+            ? existingEvent.organizer_id?._id || existingEvent.organizer_id?.id
+            : existingEvent.organizer_id;
+        if (String(organizerIdStr) !== String(req.auth.uid)) {
+          return res.status(403).json({ error: 'You are only authorized to plan events assigned to you.' });
+        }
+      }
+    }
+
+    const venues = await db.findVenues();
+    const plan = await generateEventPlan({ preferences, existingEvent, venues });
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'GENERATE_AI_EVENT_PLAN',
+      collection: 'ai_event_plans',
+      outcome: 'ALLOWED',
+      predicate: 'role in ["Organizer", "Admin"]',
+      reason: `Generated AI event plan for category "${plan.category}" (${existingEvent ? 'Mode A: Existing Event' : 'Mode B: New Concept'})`,
+    });
+
+    return res.json({ plan });
+  } catch (err) {
+    console.error('[AI Event Plan Error]', err);
+    return res.status(500).json({ error: err.message || 'Failed to generate AI event plan.' });
+  }
+});
+
+// POST /api/ai/venue-recommendations - Rank and match campus venues
+apiRouter.post('/ai/venue-recommendations', requireRole(['Organizer', 'Admin']), async (req, res) => {
+  try {
+    const { preferences = {} } = req.body || {};
+    const venues = await db.findVenues();
+    const ranked = rankVenuesForEvent(venues, preferences);
+    return res.json({ recommendations: ranked });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to rank venues.' });
+  }
+});
+
+// POST /api/ai/saved-plans - Save an AI Event Plan to Organizer's collection
+apiRouter.post('/ai/saved-plans', requireRole(['Organizer', 'Admin']), async (req, res) => {
+  try {
+    const planData = req.body || {};
+    if (!planData.title || !planData.category) {
+      return res.status(400).json({ error: 'Plan title and category are required to save.' });
+    }
+
+    const saved = await db.createAiEventPlan(planData, req.auth.uid);
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'SAVE_AI_EVENT_PLAN',
+      collection: 'ai_event_plans',
+      outcome: 'ALLOWED',
+      predicate: 'role in ["Organizer", "Admin"]',
+      reason: `Organizer saved AI plan "${saved.title}" (ID: ${saved._id})`,
+    });
+
+    return res.status(201).json({ plan: saved });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to save AI event plan.' });
+  }
+});
+
+// GET /api/ai/saved-plans - Retrieve all saved plans for current Organizer
+apiRouter.get('/ai/saved-plans', requireRole(['Organizer', 'Admin']), async (req, res) => {
+  try {
+    const plans = await db.findAiEventPlans(req.auth.uid);
+    return res.json({ plans });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to retrieve saved plans.' });
+  }
+});
+
+// GET /api/ai/saved-plans/:id - Retrieve specific plan by ID
+apiRouter.get('/ai/saved-plans/:id', requireRole(['Organizer', 'Admin']), async (req, res) => {
+  try {
+    const plan = await db.findAiEventPlanById(
+      req.params.id,
+      req.auth.role === 'Admin' ? null : req.auth.uid
+    );
+    if (!plan) {
+      return res.status(404).json({ error: 'AI event plan not found or access denied.' });
+    }
+    return res.json({ plan });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to retrieve AI event plan.' });
+  }
+});
+
+// PATCH /api/ai/saved-plans/:id - Update saved AI plan
+apiRouter.patch('/ai/saved-plans/:id', requireRole(['Organizer', 'Admin']), async (req, res) => {
+  try {
+    const updated = await db.updateAiEventPlan(
+      req.params.id,
+      req.body || {},
+      req.auth.role === 'Admin' ? null : req.auth.uid
+    );
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'UPDATE_AI_EVENT_PLAN',
+      collection: 'ai_event_plans',
+      outcome: 'ALLOWED',
+      predicate: 'role in ["Organizer", "Admin"]',
+      reason: `Updated AI plan "${updated.title}"`,
+    });
+
+    return res.json({ plan: updated });
+  } catch (err) {
+    return res.status(400).json({ error: err.message || 'Failed to update plan.' });
+  }
+});
+
+// DELETE /api/ai/saved-plans/:id - Delete saved plan
+apiRouter.delete('/ai/saved-plans/:id', requireRole(['Organizer', 'Admin']), async (req, res) => {
+  try {
+    await db.deleteAiEventPlan(
+      req.params.id,
+      req.auth.role === 'Admin' ? null : req.auth.uid
+    );
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'DELETE_AI_EVENT_PLAN',
+      collection: 'ai_event_plans',
+      outcome: 'ALLOWED',
+      predicate: 'role in ["Organizer", "Admin"]',
+      reason: `Deleted AI plan ID ${req.params.id}`,
+    });
+
+    return res.json({ success: true, message: 'AI event plan deleted successfully.' });
+  } catch (err) {
+    return res.status(400).json({ error: err.message || 'Failed to delete plan.' });
   }
 });

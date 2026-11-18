@@ -218,6 +218,73 @@ contactRequestSchema.index({ status: 1, createdAt: -1 });
 contactRequestSchema.index({ requestType: 1 });
 contactRequestSchema.index({ email: 1 });
 
+// AI Event Plan Schema for Saved AI Recommendations
+export const aiEventPlanSchema = new Schema({
+  organizerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  linkedEventId: { type: Schema.Types.ObjectId, ref: 'Event', default: null },
+  title: { type: String, required: true },
+  category: { type: String, required: true },
+  preferences: {
+    participants: { type: Number, default: 100 },
+    budget: { type: Number, default: 20000 },
+    duration: { type: String, default: '4 Hours' },
+    date: { type: String, default: '' },
+    audience: { type: String, default: 'Open to All Students' },
+    indoorOutdoor: { type: String, default: 'Indoor' },
+    specialRequirements: { type: String, default: '' },
+  },
+  eventIdeas: [
+    {
+      title: { type: String, required: true },
+      theme: { type: String, default: '' },
+      description: { type: String, default: '' },
+      activities: [{ type: String }],
+      engagementTips: [{ type: String }],
+    },
+  ],
+  recommendedVenues: [
+    {
+      venueId: { type: Schema.Types.ObjectId, ref: 'Venue', required: true },
+      venueName: { type: String, required: true },
+      suitabilityReason: { type: String, default: '' },
+      matchScore: { type: Number, default: 90 },
+      capacity: { type: Number, default: 0 },
+      coverImage: { type: String, default: '' },
+      isAvailable: { type: Boolean, default: true },
+    },
+  ],
+  schedule: [
+    {
+      time: { type: String, required: true },
+      title: { type: String, required: true },
+      description: { type: String, default: '' },
+    },
+  ],
+  budgetBreakdown: [
+    {
+      category: { type: String, required: true },
+      estimatedAmount: { type: Number, required: true },
+      notes: { type: String, default: '' },
+    },
+  ],
+  requiredEquipment: [{ type: String }],
+  promotionalCopy: {
+    socialCaptions: [{ type: String }],
+    posterContent: { type: String, default: '' },
+    promotionalPitch: { type: String, default: '' },
+  },
+  status: {
+    type: String,
+    enum: ['Draft', 'SubmittedForReview', 'Archived'],
+    default: 'Draft',
+  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+aiEventPlanSchema.index({ organizerId: 1, createdAt: -1 });
+aiEventPlanSchema.index({ linkedEventId: 1 });
+
 export const UserModel = mongoose.models.User || mongoose.model('User', userSchema);
 export const VenueModel = mongoose.models.Venue || mongoose.model('Venue', venueSchema);
 export const EventModel = mongoose.models.Event || mongoose.model('Event', eventSchema);
@@ -229,6 +296,8 @@ export const VenueInquiryModel =
   mongoose.models.VenueInquiry || mongoose.model('VenueInquiry', venueInquirySchema);
 export const ContactRequestModel =
   mongoose.models.ContactRequest || mongoose.model('ContactRequest', contactRequestSchema);
+export const AiEventPlanModel =
+  mongoose.models.AiEventPlan || mongoose.model('AiEventPlan', aiEventPlanSchema);
 
 // Format helper to convert Mongoose documents to plain objects with string IDs
 function formatDoc(doc) {
@@ -275,6 +344,16 @@ function formatDoc(doc) {
   } else if (obj.userId && typeof obj.userId !== 'object') {
     obj.userId = obj.userId.toString();
   }
+  if (obj.organizerId && typeof obj.organizerId === 'object' && obj.organizerId._id) {
+    obj.organizerId = formatDoc(obj.organizerId);
+  } else if (obj.organizerId && typeof obj.organizerId !== 'object') {
+    obj.organizerId = obj.organizerId.toString();
+  }
+  if (obj.linkedEventId && typeof obj.linkedEventId === 'object' && obj.linkedEventId._id) {
+    obj.linkedEventId = formatDoc(obj.linkedEventId);
+  } else if (obj.linkedEventId && typeof obj.linkedEventId !== 'object') {
+    obj.linkedEventId = obj.linkedEventId.toString();
+  }
   return obj;
 }
 
@@ -291,6 +370,7 @@ class CampusMongoEngine {
       listings: [],
       inquiries: [],
       contactRequests: [],
+      aiEventPlans: [],
     };
     this.isConnectedToMongo = false;
     this.loadSnapshot();
@@ -304,6 +384,7 @@ class CampusMongoEngine {
           listings: [],
           inquiries: [],
           contactRequests: [],
+          aiEventPlans: [],
           ...JSON.parse(raw),
         };
       }
@@ -335,6 +416,7 @@ class CampusMongoEngine {
           VenueListingModel.init(),
           VenueInquiryModel.init(),
           ContactRequestModel.init(),
+          AiEventPlanModel.init(),
         ]);
         return true;
       } catch (err) {
@@ -1678,6 +1760,166 @@ class CampusMongoEngine {
     };
     this.saveSnapshot();
     return this.state.contactRequests[index];
+  }
+
+  // ---------------------------------------------------------------------------
+  // AI Event Plans Engine
+  // ---------------------------------------------------------------------------
+  async createAiEventPlan(data, organizerId) {
+    if (!organizerId) throw new Error('Organizer ID is required to save an AI event plan.');
+    const planPayload = {
+      organizerId,
+      linkedEventId: data.linkedEventId || null,
+      title: data.title || 'Untitled AI Event Plan',
+      category: data.category || 'Other',
+      preferences: {
+        participants: Number(data.preferences?.participants) || 100,
+        budget: Number(data.preferences?.budget) || 20000,
+        duration: data.preferences?.duration || '4 Hours',
+        date: data.preferences?.date || '',
+        audience: data.preferences?.audience || 'Open to All Students',
+        indoorOutdoor: data.preferences?.indoorOutdoor || 'Indoor',
+        specialRequirements: data.preferences?.specialRequirements || '',
+      },
+      eventIdeas: Array.isArray(data.eventIdeas) ? data.eventIdeas : [],
+      recommendedVenues: Array.isArray(data.recommendedVenues) ? data.recommendedVenues : [],
+      schedule: Array.isArray(data.schedule) ? data.schedule : [],
+      budgetBreakdown: Array.isArray(data.budgetBreakdown) ? data.budgetBreakdown : [],
+      requiredEquipment: Array.isArray(data.requiredEquipment) ? data.requiredEquipment : [],
+      promotionalCopy: {
+        socialCaptions: Array.isArray(data.promotionalCopy?.socialCaptions) ? data.promotionalCopy.socialCaptions : [],
+        posterContent: data.promotionalCopy?.posterContent || '',
+        promotionalPitch: data.promotionalCopy?.promotionalPitch || '',
+      },
+      status: data.status || 'Draft',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    if (this.isConnectedToMongo) {
+      const plan = await AiEventPlanModel.create(planPayload);
+      return formatDoc(plan);
+    }
+
+    if (!this.state.aiEventPlans) this.state.aiEventPlans = [];
+    const inMemPlan = {
+      ...planPayload,
+      _id: this.generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.state.aiEventPlans.push(inMemPlan);
+    this.saveSnapshot();
+    return inMemPlan;
+  }
+
+  async findAiEventPlans(organizerId) {
+    if (!organizerId) return [];
+    if (this.isConnectedToMongo) {
+      if (!mongoose.Types.ObjectId.isValid(organizerId)) return [];
+      const list = await AiEventPlanModel.find({ organizerId })
+        .populate('linkedEventId', 'title category date status venue_id')
+        .sort({ updatedAt: -1 })
+        .lean();
+      return list.map(formatDoc);
+    }
+
+    if (!this.state.aiEventPlans) this.state.aiEventPlans = [];
+    const list = this.state.aiEventPlans.filter((p) => String(p.organizerId) === String(organizerId));
+    return [...list].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+  }
+
+  async findAiEventPlanById(id, organizerId = null) {
+    if (!id) return null;
+    if (this.isConnectedToMongo) {
+      if (!mongoose.Types.ObjectId.isValid(id)) return null;
+      const query = { _id: id };
+      if (organizerId && mongoose.Types.ObjectId.isValid(organizerId)) {
+        query.organizerId = organizerId;
+      }
+      const plan = await AiEventPlanModel.findOne(query)
+        .populate('linkedEventId', 'title category date status venue_id')
+        .lean();
+      return formatDoc(plan);
+    }
+
+    if (!this.state.aiEventPlans) this.state.aiEventPlans = [];
+    const plan = this.state.aiEventPlans.find((p) => {
+      const matchesId = String(p._id) === String(id);
+      if (!matchesId) return false;
+      if (organizerId) return String(p.organizerId) === String(organizerId);
+      return true;
+    });
+    return plan || null;
+  }
+
+  async updateAiEventPlan(id, updates = {}, organizerId = null) {
+    if (!id) throw new Error('Plan ID is required.');
+    const sanitized = {};
+    if (updates.title !== undefined) sanitized.title = updates.title;
+    if (updates.category !== undefined) sanitized.category = updates.category;
+    if (updates.preferences) sanitized.preferences = updates.preferences;
+    if (Array.isArray(updates.eventIdeas)) sanitized.eventIdeas = updates.eventIdeas;
+    if (Array.isArray(updates.recommendedVenues)) sanitized.recommendedVenues = updates.recommendedVenues;
+    if (Array.isArray(updates.schedule)) sanitized.schedule = updates.schedule;
+    if (Array.isArray(updates.budgetBreakdown)) sanitized.budgetBreakdown = updates.budgetBreakdown;
+    if (Array.isArray(updates.requiredEquipment)) sanitized.requiredEquipment = updates.requiredEquipment;
+    if (updates.promotionalCopy) sanitized.promotionalCopy = updates.promotionalCopy;
+    if (updates.status) sanitized.status = updates.status;
+    sanitized.updatedAt = new Date();
+
+    if (this.isConnectedToMongo) {
+      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid plan ID.');
+      const query = { _id: id };
+      if (organizerId && mongoose.Types.ObjectId.isValid(organizerId)) {
+        query.organizerId = organizerId;
+      }
+      const updated = await AiEventPlanModel.findOneAndUpdate(query, { $set: sanitized }, { new: true });
+      if (!updated) throw new Error('AI event plan not found or permission denied.');
+      return formatDoc(updated);
+    }
+
+    if (!this.state.aiEventPlans) this.state.aiEventPlans = [];
+    const index = this.state.aiEventPlans.findIndex((p) => {
+      if (String(p._id) !== String(id)) return false;
+      if (organizerId && String(p.organizerId) !== String(organizerId)) return false;
+      return true;
+    });
+    if (index === -1) throw new Error('AI event plan not found or permission denied.');
+    this.state.aiEventPlans[index] = {
+      ...this.state.aiEventPlans[index],
+      ...sanitized,
+      updatedAt: new Date().toISOString(),
+    };
+    this.saveSnapshot();
+    return this.state.aiEventPlans[index];
+  }
+
+  async deleteAiEventPlan(id, organizerId = null) {
+    if (!id) throw new Error('Plan ID is required.');
+    if (this.isConnectedToMongo) {
+      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid plan ID.');
+      const query = { _id: id };
+      if (organizerId && mongoose.Types.ObjectId.isValid(organizerId)) {
+        query.organizerId = organizerId;
+      }
+      const deleted = await AiEventPlanModel.findOneAndDelete(query);
+      if (!deleted) throw new Error('AI event plan not found or permission denied.');
+      return true;
+    }
+
+    if (!this.state.aiEventPlans) this.state.aiEventPlans = [];
+    const initialLen = this.state.aiEventPlans.length;
+    this.state.aiEventPlans = this.state.aiEventPlans.filter((p) => {
+      if (String(p._id) !== String(id)) return true;
+      if (organizerId && String(p.organizerId) !== String(organizerId)) return true;
+      return false;
+    });
+    if (this.state.aiEventPlans.length === initialLen) {
+      throw new Error('AI event plan not found or permission denied.');
+    }
+    this.saveSnapshot();
+    return true;
   }
 }
 

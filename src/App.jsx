@@ -418,7 +418,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'organizer' && (currentUser?.role === 'Organizer' || currentUser?.role === 'Admin') && (
+        {(activeTab === 'organizer' || activeTab === 'ai-planner') && (currentUser?.role === 'Organizer' || currentUser?.role === 'Admin') && (
           <Suspense fallback={<PortalSkeleton />}>
             <OrganizerPortal
               venues={venues}
@@ -426,6 +426,7 @@ export default function App() {
               onRefreshEvents={refreshMyEvents}
               onRefreshVenues={refreshVenues}
               initialVenueId={selectedVenueForBooking}
+              initialSubTab={activeTab === 'ai-planner' ? 'ai-planner' : 'programs'}
             />
           </Suspense>
         )}

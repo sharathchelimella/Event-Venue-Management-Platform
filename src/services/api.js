@@ -402,4 +402,54 @@ export const api = {
     });
     return res.event;
   },
+
+  // AI Event Planner & Recommendations
+  async generateAiEventPlan(preferences, existingEventId = null) {
+    const res = await apiRequest('/api/ai/event-plan', {
+      method: 'POST',
+      body: JSON.stringify({ preferences, existingEventId }),
+    });
+    return res.plan;
+  },
+
+  async getAiVenueRecommendations(preferences) {
+    const res = await apiRequest('/api/ai/venue-recommendations', {
+      method: 'POST',
+      body: JSON.stringify({ preferences }),
+    });
+    return res.recommendations || [];
+  },
+
+  async saveAiEventPlan(planData) {
+    const res = await apiRequest('/api/ai/saved-plans', {
+      method: 'POST',
+      body: JSON.stringify(planData),
+    });
+    return res.plan;
+  },
+
+  async getSavedAiPlans() {
+    const res = await apiRequest('/api/ai/saved-plans');
+    return res.plans || [];
+  },
+
+  async getSavedAiPlanById(id) {
+    const res = await apiRequest(`/api/ai/saved-plans/${id}`);
+    return res.plan;
+  },
+
+  async updateSavedAiPlan(id, updates) {
+    const res = await apiRequest(`/api/ai/saved-plans/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+    return res.plan;
+  },
+
+  async deleteSavedAiPlan(id) {
+    const res = await apiRequest(`/api/ai/saved-plans/${id}`, {
+      method: 'DELETE',
+    });
+    return res;
+  },
 };

@@ -81,14 +81,27 @@ export const Header = ({
             )}
 
             {currentUser && (currentUser.role === 'Organizer' || currentUser.role === 'Admin') && (
-              <button
-                onClick={() => setActiveTab('organizer')}
-                className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
-                  activeTab === 'organizer' ? 'text-slate-900 font-semibold border-b-2 border-slate-900 pb-0.5' : ''
-                }`}
-              >
-                Organizer Portal
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('organizer')}
+                  className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
+                    activeTab === 'organizer' ? 'text-slate-900 font-semibold border-b-2 border-slate-900 pb-0.5' : ''
+                  }`}
+                >
+                  Organizer Portal
+                </button>
+                <button
+                  onClick={() => setActiveTab('ai-planner')}
+                  className={`hover:text-indigo-600 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                    activeTab === 'ai-planner'
+                      ? 'text-indigo-600 font-bold border-b-2 border-indigo-600 pb-0.5'
+                      : 'text-indigo-600/90 font-medium'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
+                  <span>AI Planner</span>
+                </button>
+              </>
             )}
 
             {currentUser && currentUser.role === 'Admin' && (
@@ -208,12 +221,23 @@ export const Header = ({
             </button>
           )}
           {(currentUser?.role === 'Organizer' || currentUser?.role === 'Admin') && (
-            <button
-              onClick={() => setActiveTab('organizer')}
-              className={`whitespace-nowrap ${activeTab === 'organizer' ? 'text-slate-950 font-bold' : ''}`}
-            >
-              Organizer
-            </button>
+            <>
+              <button
+                onClick={() => setActiveTab('organizer')}
+                className={`whitespace-nowrap ${activeTab === 'organizer' ? 'text-slate-950 font-bold' : ''}`}
+              >
+                Organizer
+              </button>
+              <button
+                onClick={() => setActiveTab('ai-planner')}
+                className={`whitespace-nowrap flex items-center gap-1 text-indigo-600 ${
+                  activeTab === 'ai-planner' ? 'font-bold' : ''
+                }`}
+              >
+                <Sparkles className="w-3 h-3 text-indigo-500" />
+                <span>AI Planner</span>
+              </button>
+            </>
           )}
           {currentUser?.role === 'Admin' && (
             <button
