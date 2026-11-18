@@ -168,10 +168,15 @@ export const api = {
     return res.venues;
   },
 
-  async createVenue(venue_name, location_type, max_capacity) {
+  async createVenue(venueData, location_type, max_capacity) {
+    const payload =
+      typeof venueData === 'object'
+        ? venueData
+        : { venue_name: venueData, location_type, max_capacity };
+
     const res = await apiRequest('/api/venues', {
       method: 'POST',
-      body: JSON.stringify({ venue_name, location_type, max_capacity }),
+      body: JSON.stringify(payload),
     });
     return res.venue;
   },
@@ -204,6 +209,14 @@ export const api = {
     const res = await apiRequest('/api/events', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+    return res.event;
+  },
+
+  async updateEvent(id, updates) {
+    const res = await apiRequest(`/api/events/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
     });
     return res.event;
   },

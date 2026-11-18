@@ -22,7 +22,12 @@ import {
   Clock,
   DollarSign,
   History,
+  Eye,
+  Camera,
+  Sparkles,
 } from 'lucide-react';
+import { VenueDetailModal } from './VenueDetailModal.jsx';
+import { getVenueCover } from '../utils/imagePlaceholders.js';
 
 export const AdminPortal = ({
   pendingEvents = [],
@@ -37,6 +42,15 @@ export const AdminPortal = ({
   const [venueName, setVenueName] = useState('');
   const [locationType, setLocationType] = useState('in_campus');
   const [maxCapacity, setMaxCapacity] = useState('');
+  const [venueDescription, setVenueDescription] = useState('');
+  const [venueCoverImage, setVenueCoverImage] = useState('');
+  const [venueFacilities, setVenueFacilities] = useState([
+    'Air Conditioning',
+    'Projector & Screen',
+    'Stage & Sound System',
+    'High-Speed Wi-Fi',
+  ]);
+  const [adminPreviewVenue, setAdminPreviewVenue] = useState(null);
   const [addingVenue, setAddingVenue] = useState(false);
   const [venueError, setVenueError] = useState(null);
   const [venueSuccess, setVenueSuccess] = useState(null);
@@ -193,10 +207,19 @@ export const AdminPortal = ({
 
     setAddingVenue(true);
     try {
-      await api.createVenue(venueName.trim(), locationType, capNum);
+      await api.createVenue({
+        venue_name: venueName.trim(),
+        location_type: locationType,
+        max_capacity: capNum,
+        description: venueDescription.trim() || undefined,
+        coverImage: venueCoverImage.trim() || undefined,
+        facilities: venueFacilities,
+      });
       setVenueSuccess(`Venue "${venueName.trim()}" created successfully with capacity of ${capNum} seats.`);
       setVenueName('');
       setMaxCapacity('');
+      setVenueDescription('');
+      setVenueCoverImage('');
       await onRefreshVenues();
       if (activeSubTab === 'rls') loadRLSData();
     } catch (err) {
@@ -873,10 +896,86 @@ export const AdminPortal = ({
                 />
               </div>
 
+              {/* Cover Image URL / Preset */}
+              <div className="space-y-2">
+                <label className="block font-semibold text-slate-700">Cover Image URL</label>
+                <input
+                  type="url"
+                  value={venueCoverImage}
+                  onChange={(e) => setVenueCoverImage(e.target.value)}
+                  placeholder="https://images.unsplash.com/..."
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-hidden focus:border-slate-900 font-mono"
+                />
+                <div className="flex flex-wrap gap-1">
+                  <span className="text-[10px] text-slate-400 block w-full">Quick Preset Images:</span>
+                  {[
+                    { label: 'Auditorium', url: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80' },
+                    { label: 'Seminar Hall', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80' },
+                    { label: 'Outdoor Ground', url: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=1200&q=80' },
+                  ].map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => setVenueCoverImage(p.url)}
+                      className={`px-2 py-0.5 rounded text-[10px] border ${
+                        venueCoverImage === p.url
+                          ? 'bg-slate-900 text-white border-slate-900'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                      }`}
+                    >
+                      + {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Venue Description</label>
+                <textarea
+                  rows={2}
+                  value={venueDescription}
+                  onChange={(e) => setVenueDescription(e.target.value)}
+                  placeholder="Features, audio-visual infrastructure, climate control..."
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-hidden focus:border-slate-900"
+                />
+              </div>
+
+              {/* Facilities checkboxes */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1.5">Facilities Provided</label>
+                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                  {[
+                    'Air Conditioning',
+                    'Projector & Screen',
+                    'Stage & Sound System',
+                    'High-Speed Wi-Fi',
+                    'Tiered Seating',
+                    'Podium & Wireless Mics',
+                  ].map((fac) => (
+                    <label key={fac} className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={venueFacilities.includes(fac)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setVenueFacilities((prev) => [...prev, fac]);
+                          } else {
+                            setVenueFacilities((prev) => prev.filter((f) => f !== fac));
+                          }
+                        }}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-0"
+                      />
+                      <span className="text-slate-700 truncate">{fac}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={addingVenue}
-                className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 {addingVenue ? 'Adding Venue...' : 'Register Venue'}
               </button>
@@ -889,7 +988,7 @@ export const AdminPortal = ({
               <div>
                 <h3 className="text-sm font-bold text-slate-900">Campus Venues Registry</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Current facilities, capacities, and active booking dates.
+                  Current facilities, capacities, cover photos, and active booking dates.
                 </p>
               </div>
               <span className="text-xs font-mono text-slate-500 tabular-nums">
@@ -901,7 +1000,7 @@ export const AdminPortal = ({
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 font-semibold">
-                    <th className="py-2.5 px-3">Venue Name</th>
+                    <th className="py-2.5 px-3">Venue & Photo</th>
                     <th className="py-2.5 px-3">Location</th>
                     <th className="py-2.5 px-3">Max Capacity</th>
                     <th className="py-2.5 px-3">Reserved Dates</th>
@@ -911,11 +1010,29 @@ export const AdminPortal = ({
                 <tbody className="divide-y divide-slate-100">
                   {venues.map((venue) => {
                     const isEditing = editingVenueId === venue._id;
+                    const cover =
+                      venue.coverImage ||
+                      (venue.images && venue.images[0]?.url) ||
+                      getVenueCover(venue);
 
                     return (
                       <tr key={venue._id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3 px-3 font-semibold text-slate-900">
-                          {venue.venue_name}
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={cover}
+                              alt={venue.venue_name}
+                              className="w-12 h-9 object-cover rounded-lg border border-slate-200 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="font-semibold text-slate-900 truncate">
+                                {venue.venue_name}
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-mono">
+                                ID: {(venue._id || '').slice(-6)}
+                              </div>
+                            </div>
+                          </div>
                         </td>
                         <td className="py-3 px-3 text-slate-600 capitalize">
                           {venue.location_type === 'out_campus' ? 'Off-Campus' : 'In-Campus'}
@@ -958,15 +1075,25 @@ export const AdminPortal = ({
                           )}
                         </td>
                         <td className="py-3 px-3 text-right">
-                          {!isEditing && (
+                          <div className="flex items-center justify-end gap-2">
                             <button
-                              onClick={() => startEditCapacity(venue)}
-                              className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 font-medium"
+                              type="button"
+                              onClick={() => setAdminPreviewVenue(venue)}
+                              className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
                             >
-                              <Edit2 className="w-3 h-3" />
-                              <span>Edit Limit</span>
+                              <Eye className="w-3 h-3" />
+                              <span>Details</span>
                             </button>
-                          )}
+                            {!isEditing && (
+                              <button
+                                onClick={() => startEditCapacity(venue)}
+                                className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 font-medium"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                                <span>Edit</span>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1192,6 +1319,15 @@ export const AdminPortal = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* Admin Venue Detail Inspection Modal */}
+      {adminPreviewVenue && (
+        <VenueDetailModal
+          venue={adminPreviewVenue}
+          isOpen={Boolean(adminPreviewVenue)}
+          onClose={() => setAdminPreviewVenue(null)}
+        />
       )}
     </div>
   );

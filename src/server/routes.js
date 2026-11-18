@@ -356,7 +356,8 @@ apiRouter.get('/venues', async (_req, res) => {
 // POST /api/venues (RLS Guard: Admin only)
 apiRouter.post('/venues', requireRole(['Admin']), async (req, res) => {
   try {
-    const { venue_name, location_type, max_capacity } = req.body || {};
+    const { venue_name, location_type, max_capacity, coverImage, images, description, facilities, pricing } =
+      req.body || {};
 
     if (!venue_name || !max_capacity) {
       return res.status(400).json({ error: 'Venue name and max capacity are required.' });
@@ -371,6 +372,11 @@ apiRouter.post('/venues', requireRole(['Admin']), async (req, res) => {
       venue_name: venue_name.trim(),
       location_type: location_type === 'out_campus' ? 'out_campus' : 'in_campus',
       max_capacity: capacityNum,
+      coverImage: coverImage || '',
+      images: Array.isArray(images) ? images : [],
+      description: (description || '').trim(),
+      facilities: Array.isArray(facilities) ? facilities : [],
+      pricing: pricing || { pricingType: 'Free', price: 0, currency: 'INR' },
     });
 
     logAudit({
@@ -396,11 +402,18 @@ apiRouter.post('/venues', requireRole(['Admin']), async (req, res) => {
 apiRouter.patch('/venues/:id', requireRole(['Admin']), async (req, res) => {
   try {
     const { id } = req.params;
-    const { venue_name, max_capacity, location_type } = req.body || {};
+    const { venue_name, max_capacity, location_type, coverImage, images, description, facilities, pricing } =
+      req.body || {};
 
     const updates = {};
     if (venue_name) updates.venue_name = venue_name.trim();
     if (location_type) updates.location_type = location_type;
+    if (coverImage !== undefined) updates.coverImage = coverImage;
+    if (images !== undefined) updates.images = Array.isArray(images) ? images : [];
+    if (description !== undefined) updates.description = description.trim();
+    if (facilities !== undefined) updates.facilities = Array.isArray(facilities) ? facilities : [];
+    if (pricing !== undefined) updates.pricing = pricing;
+
     if (max_capacity !== undefined) {
       const cap = parseInt(max_capacity, 10);
       if (isNaN(cap) || cap <= 0) {
@@ -417,11 +430,11 @@ apiRouter.patch('/venues/:id', requireRole(['Admin']), async (req, res) => {
     logAudit({
       actor: req.auth.user.name,
       actorRole: req.auth.role,
-      action: 'UPDATE_VENUE_CAPACITY',
+      action: 'UPDATE_VENUE_DETAILS',
       collection: 'venues',
       outcome: 'ALLOWED',
       predicate: 'auth.role == "Admin"',
-      reason: `Updated venue "${updated.venue_name}" capacity to ${updated.max_capacity}`,
+      reason: `Updated venue "${updated.venue_name}" specifications`,
     });
 
     return res.json({ venue: updated });
@@ -447,11 +460,12 @@ apiRouter.get('/events/approved', async (_req, res) => {
 // POST /api/events (RLS Guard: Organizer or Admin only)
 apiRouter.post('/events', requireRole(['Organizer', 'Admin']), async (req, res) => {
   try {
-    const { title, category, description, venue_id, event_date } = req.body || {};
+    const { title, category, description, venue_id, event_date, event_time, duration_hours, posterImage, tags } =
+      req.body || {};
     const userId = req.auth.uid;
 
     if (!title || !category || !description || !venue_id || !event_date) {
-      return res.status(400).json({ error: 'All fields are required.' });
+      return res.status(400).json({ error: 'Title, category, description, venue, and date are required.' });
     }
 
     const today = new Date().toISOString().split('T')[0];
@@ -471,6 +485,10 @@ apiRouter.post('/events', requireRole(['Organizer', 'Admin']), async (req, res) 
       venue_id,
       organizer_id: userId,
       event_date,
+      event_time: event_time || '10:00 AM - 01:00 PM',
+      duration_hours: Number(duration_hours) || 3,
+      posterImage: posterImage || '',
+      tags: Array.isArray(tags) ? tags : [],
     });
 
     logAudit({
@@ -491,6 +509,40 @@ apiRouter.post('/events', requireRole(['Organizer', 'Admin']), async (req, res) 
       });
     }
     return res.status(500).json({ error: err.message || 'Failed to submit event request.' });
+  }
+});
+
+// PATCH /api/events/:id (RLS Guard: Organizer who owns event or Admin)
+apiRouter.patch('/events/:id', requireRole(['Organizer', 'Admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, category, description, posterImage, event_time, duration_hours, tags } = req.body || {};
+
+    const updates = {};
+    if (title) updates.title = title.trim();
+    if (category) updates.category = category;
+    if (description) updates.description = description.trim();
+    if (posterImage !== undefined) updates.posterImage = posterImage;
+    if (event_time) updates.event_time = event_time.trim();
+    if (duration_hours) updates.duration_hours = Number(duration_hours);
+    if (tags) updates.tags = Array.isArray(tags) ? tags : [];
+
+    const updated = await db.updateEvent(id, updates, req.auth.uid, req.auth.role === 'Admin');
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'UPDATE_EVENT_DETAILS',
+      collection: 'events',
+      outcome: 'ALLOWED',
+      predicate: 'event.organizer_id == auth.uid OR auth.role == "Admin"',
+      reason: `Updated details/poster for event "${updated.title}"`,
+    });
+
+    return res.json({ event: updated });
+  } catch (err) {
+    const statusCode = err.message?.includes('403') ? 403 : 500;
+    return res.status(statusCode).json({ error: err.message || 'Failed to update event.' });
   }
 });
 

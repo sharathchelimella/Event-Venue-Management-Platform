@@ -10,9 +10,12 @@ import {
   Layers,
   DollarSign,
   Plus,
+  Eye,
+  Camera,
 } from 'lucide-react';
 import { api } from '../services/api.js';
 import { VenueDetailModal } from './VenueDetailModal.jsx';
+import { getVenueCover } from '../utils/imagePlaceholders.js';
 
 export const VenueDirectory = ({
   venues = [],
@@ -334,74 +337,148 @@ export const VenueDirectory = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCampusVenues.map((venue) => {
               const bookedCount = venue.booked_dates ? venue.booked_dates.length : 0;
+              const coverUrl =
+                venue.coverImage ||
+                (venue.images && venue.images[0]?.url) ||
+                getVenueCover(venue);
+              const isPlaceholder =
+                !venue.coverImage && (!venue.images || venue.images.length === 0);
+              const facilities =
+                venue.facilities && venue.facilities.length > 0
+                  ? venue.facilities
+                  : ['Air Conditioning', 'Projector & Screen', 'Stage & Sound', 'Wi-Fi'];
 
               return (
                 <div
                   key={venue._id}
-                  className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between hover:border-slate-300 transition-colors shadow-xs"
+                  onClick={() => setSelectedVenueModal(venue)}
+                  className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-lg hover:border-slate-300 transition-all cursor-pointer group flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-                      <span className="font-semibold text-slate-900 capitalize">
-                        {venue.location_type === 'out_campus' ? 'Off-Campus Facility' : 'In-Campus Facility'}
-                      </span>
-                      <span className="font-mono tabular-nums text-slate-400">ID: {(venue._id || '').slice(-6)}</span>
-                    </div>
+                    {/* Cover Image Stage with Subtle Zoom */}
+                    <div className="aspect-16/10 w-full relative overflow-hidden bg-slate-950">
+                      <img
+                        src={coverUrl}
+                        alt={venue.venue_name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/25" />
 
-                    <h3 className="text-base font-bold text-slate-900 mb-3">
-                      {venue.venue_name}
-                    </h3>
-
-                    <div className="space-y-2 text-xs mb-4">
-                      <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
-                        <span className="text-slate-600 flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-slate-400" />
-                          Seating Capacity:
-                        </span>
-                        <span className="font-mono tabular-nums font-bold text-slate-900">
-                          {(venue.max_capacity || 0).toLocaleString()} Seats
-                        </span>
+                      {/* Top badges */}
+                      <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm border border-slate-700">
+                        <Building2 className="w-3 h-3 text-emerald-400" />
+                        <span>{venue.location_type === 'out_campus' ? 'OFF-CAMPUS' : 'IN-CAMPUS'}</span>
                       </div>
 
-                      <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
-                        <div className="flex items-center justify-between mb-1 text-slate-600">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            Upcoming Booked Dates:
-                          </span>
-                          <span className="font-mono tabular-nums font-semibold text-slate-900">
-                            {bookedCount}
+                      {isPlaceholder ? (
+                        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-xs text-slate-300 text-[10px] font-medium px-2 py-0.5 rounded-md flex items-center gap-1 border border-white/10">
+                          <Camera className="w-3 h-3 text-slate-400" />
+                          <span>Photo not available</span>
+                        </div>
+                      ) : (
+                        <div className="absolute top-3 right-3 bg-emerald-600/90 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">
+                          AUDITORIUM
+                        </div>
+                      )}
+
+                      {/* Bottom title overlay */}
+                      <div className="absolute bottom-3 left-3 right-3 text-white">
+                        <h3 className="text-base font-bold text-white group-hover:text-indigo-200 transition-colors truncate drop-shadow-sm">
+                          {venue.venue_name}
+                        </h3>
+                        <div className="text-xs text-slate-300 flex items-center gap-1.5 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                          <span>Main Academic Complex</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Content Body */}
+                    <div className="p-5 space-y-3">
+                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                        {venue.description ||
+                          'Modern university venue equipped for academic conventions, presentations, hackathons, and gatherings.'}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="font-semibold text-slate-800">
+                            {(venue.max_capacity || 0).toLocaleString()} Seats
                           </span>
                         </div>
+                        <div className="text-right truncate font-bold text-emerald-600">
+                          Free for Clubs
+                        </div>
+                      </div>
 
-                        {venue.booked_dates && venue.booked_dates.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {venue.booked_dates.map((d) => (
-                              <span
-                                key={d}
-                                className="font-mono text-[10px] bg-white border border-slate-200 text-slate-700 px-1.5 py-0.5 rounded"
-                              >
-                                {d}
-                              </span>
-                            ))}
-                          </div>
+                      {/* Availability Status */}
+                      <div className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="text-slate-500 font-medium flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          Availability:
+                        </span>
+                        {bookedCount > 0 ? (
+                          <span className="font-semibold text-amber-700 font-mono text-[11px]">
+                            {bookedCount} date{bookedCount === 1 ? '' : 's'} booked
+                          </span>
                         ) : (
-                          <div className="text-[11px] text-emerald-600 mt-1 font-medium">
-                            Open availability across all upcoming dates
-                          </div>
+                          <span className="font-semibold text-emerald-700 text-[11px]">
+                            Open for booking
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Facilities tags */}
+                      <div className="flex flex-wrap gap-1">
+                        {facilities.slice(0, 3).map((f) => (
+                          <span
+                            key={f}
+                            className="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 font-medium"
+                          >
+                            {f}
+                          </span>
+                        ))}
+                        {facilities.length > 3 && (
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-500">
+                            +{facilities.length - 3}
+                          </span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {canBook && onRequestBooking && (
+                  {/* Action footer */}
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
                     <button
-                      onClick={onRequestBooking}
-                      className="w-full mt-2 py-2 px-3 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-colors text-center"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedVenueModal(venue);
+                      }}
+                      className="text-xs font-bold text-slate-700 hover:text-slate-900 inline-flex items-center gap-1"
                     >
-                      Book Auditorium
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View Details</span>
                     </button>
-                  )}
+
+                    {canBook && onRequestBooking ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRequestBooking(venue);
+                        }}
+                        className="px-3.5 py-1.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors cursor-pointer shadow-xs"
+                      >
+                        Book Venue →
+                      </button>
+                    ) : (
+                      <span className="text-xs text-indigo-600 font-bold group-hover:translate-x-0.5 transition-transform">
+                        Explore Details →
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -418,6 +495,10 @@ export const VenueDirectory = ({
           currentUser={currentUser}
           onInquirySent={(msg) => {
             // Optional feedback
+          }}
+          onRequestBooking={(target) => {
+            setSelectedVenueModal(null);
+            if (onRequestBooking) onRequestBooking(target);
           }}
         />
       )}

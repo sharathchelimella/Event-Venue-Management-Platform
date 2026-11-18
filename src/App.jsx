@@ -61,6 +61,7 @@ export default function App() {
   const [redirectAfterLogin, setRedirectAfterLogin] = useState(null);
   const [editingVenue, setEditingVenue] = useState(null);
   const [viewingVenue, setViewingVenue] = useState(null);
+  const [selectedVenueForBooking, setSelectedVenueForBooking] = useState(null);
 
   // Initialize Web Vitals observer immediately
   useEffect(() => {
@@ -338,6 +339,8 @@ export default function App() {
             onRegister={handleRegister}
             onCancelRegistration={handleCancelRegistration}
             onOpenAuth={() => setActiveTab('login')}
+            onNavigateToVenues={() => setActiveTab('venues')}
+            onNavigateToListVenue={handleOpenListVenue}
             loading={loadingFeed}
           />
         )}
@@ -345,9 +348,16 @@ export default function App() {
         {activeTab === 'venues' && (
           <VenueDirectory
             venues={venues}
-            onRequestBooking={() => {
-              if (currentUser?.role === 'Organizer' || currentUser?.role === 'Admin') {
+            onRequestBooking={(targetVenue) => {
+              const targetId = typeof targetVenue === 'object' ? targetVenue?._id : targetVenue;
+              if (targetId) setSelectedVenueForBooking(targetId);
+              if (!currentUser) {
+                setRedirectAfterLogin('organizer');
+                setActiveTab('login');
+              } else if (currentUser.role === 'Organizer' || currentUser.role === 'Admin') {
                 setActiveTab('organizer');
+              } else {
+                addToast('error', 'Only club organizers and administrators can request venue bookings.');
               }
             }}
             canBook={currentUser?.role === 'Organizer' || currentUser?.role === 'Admin'}
@@ -409,6 +419,7 @@ export default function App() {
               myEvents={myEvents}
               onRefreshEvents={refreshMyEvents}
               onRefreshVenues={refreshVenues}
+              initialVenueId={selectedVenueForBooking}
             />
           </Suspense>
         )}
@@ -434,6 +445,19 @@ export default function App() {
           onClose={() => setViewingVenue(null)}
           currentUser={currentUser}
           onInquirySent={(msg) => addToast('success', msg)}
+          onRequestBooking={(targetVenue) => {
+            setViewingVenue(null);
+            const targetId = typeof targetVenue === 'object' ? targetVenue?._id : targetVenue;
+            if (targetId) setSelectedVenueForBooking(targetId);
+            if (!currentUser) {
+              setRedirectAfterLogin('organizer');
+              setActiveTab('login');
+            } else if (currentUser.role === 'Organizer' || currentUser.role === 'Admin') {
+              setActiveTab('organizer');
+            } else {
+              addToast('error', 'Only club organizers and administrators can request venue bookings.');
+            }
+          }}
         />
       )}
 

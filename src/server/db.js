@@ -32,6 +32,21 @@ export const venueSchema = new Schema({
   venue_name: { type: String, required: true, unique: true },
   location_type: { type: String, enum: ['in_campus', 'out_campus'], default: 'in_campus' },
   max_capacity: { type: Number, required: true, min: 1 },
+  coverImage: { type: String, default: '' },
+  images: [
+    {
+      url: { type: String, required: true },
+      caption: { type: String, default: '' },
+      isCover: { type: Boolean, default: false },
+    },
+  ],
+  description: { type: String, default: '' },
+  facilities: [{ type: String }],
+  pricing: {
+    pricingType: { type: String, default: 'Free' },
+    price: { type: Number, default: 0 },
+    currency: { type: String, default: 'INR' },
+  },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -46,6 +61,10 @@ export const eventSchema = new Schema({
   venue_id: { type: Schema.Types.ObjectId, ref: 'Venue', required: true },
   organizer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   event_date: { type: String, required: true },
+  event_time: { type: String, default: '10:00 AM - 01:00 PM' },
+  duration_hours: { type: Number, default: 3 },
+  posterImage: { type: String, default: '' },
+  tags: [{ type: String }],
   status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
   registered_count: { type: Number, default: 0, min: 0 },
   createdAt: { type: Date, default: Date.now },
@@ -442,10 +461,21 @@ class CampusMongoEngine {
   }
 
   async createVenue(data) {
+    const venuePayload = {
+      venue_name: (data.venue_name || '').trim(),
+      location_type: data.location_type || 'in_campus',
+      max_capacity: Number(data.max_capacity) || 100,
+      coverImage: data.coverImage || (data.images && data.images[0] ? data.images[0].url : ''),
+      images: Array.isArray(data.images) ? data.images : [],
+      description: (data.description || '').trim(),
+      facilities: Array.isArray(data.facilities) ? data.facilities : [],
+      pricing: data.pricing || { pricingType: 'Free', price: 0, currency: 'INR' },
+    };
+
     if (this.isConnectedToMongo) {
       const existing = await VenueModel.findOne({
         venue_name: new RegExp(
-          `^${data.venue_name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+          `^${venuePayload.venue_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
           'i'
         ),
       });
@@ -456,16 +486,12 @@ class CampusMongoEngine {
         err.code = 11000;
         throw err;
       }
-      const venue = await VenueModel.create({
-        venue_name: data.venue_name,
-        location_type: data.location_type || 'in_campus',
-        max_capacity: data.max_capacity,
-      });
+      const venue = await VenueModel.create(venuePayload);
       return formatDoc(venue);
     }
 
     const existing = this.state.venues.find(
-      (v) => v.venue_name.toLowerCase() === data.venue_name.toLowerCase()
+      (v) => v.venue_name.toLowerCase() === venuePayload.venue_name.toLowerCase()
     );
     if (existing) {
       const err = new Error(
@@ -476,7 +502,7 @@ class CampusMongoEngine {
     }
     const venue = {
       _id: this.generateId(),
-      ...data,
+      ...venuePayload,
       createdAt: new Date().toISOString(),
     };
     this.state.venues.push(venue);
@@ -503,7 +529,11 @@ class CampusMongoEngine {
           throw err;
         }
       }
-      const venue = await VenueModel.findByIdAndUpdate(id, updates, { new: true }).lean();
+      const venue = await VenueModel.findByIdAndUpdate(
+        id,
+        { $set: updates },
+        { returnDocument: 'after' }
+      ).lean();
       return venue ? { ...venue, _id: venue._id.toString() } : null;
     }
 
@@ -612,11 +642,27 @@ class CampusMongoEngine {
   }
 
   async createEvent(data) {
-    if (this.isConnectedToMongo) {
-      const venueId = typeof data.venue_id === 'object' ? data.venue_id._id : data.venue_id;
-      const organizerId =
-        typeof data.organizer_id === 'object' ? data.organizer_id._id : data.organizer_id;
+    const venueId = typeof data.venue_id === 'object' ? data.venue_id._id : data.venue_id;
+    const organizerId =
+      typeof data.organizer_id === 'object' ? data.organizer_id._id : data.organizer_id;
 
+    const eventPayload = {
+      title: (data.title || '').trim(),
+      category: data.category || 'Hackathon',
+      description: (data.description || '').trim(),
+      venue_id: venueId,
+      organizer_id: organizerId,
+      event_date: data.event_date,
+      event_time: data.event_time || '10:00 AM - 01:00 PM',
+      duration_hours: Number(data.duration_hours) || 3,
+      posterImage: data.posterImage || '',
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      status: 'Pending',
+      registered_count: 0,
+      createdAt: new Date(),
+    };
+
+    if (this.isConnectedToMongo) {
       // Partial unique index conflict check: Pending / Approved events on same venue & date
       const conflict = await EventModel.findOne({
         venue_id: venueId,
@@ -632,21 +678,9 @@ class CampusMongoEngine {
         throw err;
       }
 
-      const event = await EventModel.create({
-        title: data.title,
-        category: data.category,
-        description: data.description,
-        venue_id: venueId,
-        organizer_id: organizerId,
-        event_date: data.event_date,
-        status: 'Pending',
-        registered_count: 0,
-      });
-
+      const event = await EventModel.create(eventPayload);
       return this.findEventById(event._id.toString());
     }
-
-    const venueId = typeof data.venue_id === 'object' ? data.venue_id._id : data.venue_id;
 
     const conflict = this.state.events.find((e) => {
       const e_venueId = typeof e.venue_id === 'object' ? e.venue_id._id : e.venue_id;
@@ -667,14 +701,46 @@ class CampusMongoEngine {
 
     const event = {
       _id: this.generateId(),
-      ...data,
-      status: 'Pending',
-      registered_count: 0,
-      createdAt: new Date().toISOString(),
+      ...eventPayload,
+      createdAt: eventPayload.createdAt.toISOString(),
     };
     this.state.events.push(event);
     this.saveSnapshot();
     return this.populateEvent(event);
+  }
+
+  async updateEvent(id, updates, userId, isAdmin = false) {
+    const existing = await this.findEventById(id);
+    if (!existing) {
+      throw new Error('Event not found.');
+    }
+
+    const organizerIdStr =
+      typeof existing.organizer_id === 'object' ? existing.organizer_id._id : existing.organizer_id;
+
+    if (organizerIdStr !== userId && !isAdmin) {
+      throw new Error('403 Forbidden: You do not have permission to modify this event.');
+    }
+
+    const payload = { ...updates };
+    delete payload._id;
+    delete payload.registered_count; // Atomic guard: do not mutate registration count via updateEvent
+
+    if (this.isConnectedToMongo) {
+      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid event ID.');
+      await EventModel.findByIdAndUpdate(id, { $set: payload }, { returnDocument: 'after' });
+      return this.findEventById(id);
+    }
+
+    const eventIndex = this.state.events.findIndex((e) => e._id === id);
+    if (eventIndex === -1) throw new Error('Event not found.');
+
+    this.state.events[eventIndex] = {
+      ...this.state.events[eventIndex],
+      ...payload,
+    };
+    this.saveSnapshot();
+    return this.populateEvent(this.state.events[eventIndex]);
   }
 
   async updateEventStatus(id, status) {
