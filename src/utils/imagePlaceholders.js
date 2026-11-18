@@ -65,6 +65,31 @@ export const VENUE_PHOTO_PRESETS = [
     url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80',
     category: 'Other',
   },
+  {
+    name: 'Innovation & Incubation Hub',
+    url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+    category: 'Conference Hall',
+  },
+  {
+    name: 'Campus Open-Air Amphitheatre',
+    url: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=1200&q=80',
+    category: 'Outdoor Space',
+  },
+  {
+    name: 'Central Library Executive Boardroom',
+    url: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&w=1200&q=80',
+    category: 'Conference Hall',
+  },
+  {
+    name: 'Indoor Multi-Purpose Sports Arena',
+    url: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
+    category: 'Other',
+  },
+  {
+    name: 'UniMall Sky Terrace & Pavilion',
+    url: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80',
+    category: 'Outdoor Space',
+  },
 ];
 
 // Color and icon styles for categories
@@ -152,6 +177,11 @@ export function getVenueCover(venue) {
   if (name.includes('Ground')) return VENUE_PHOTO_PRESETS[2].url;
   if (name.includes('Seminar')) return VENUE_PHOTO_PRESETS[3].url;
   if (name.includes('Classroom')) return VENUE_PHOTO_PRESETS[4].url;
+  if (name.includes('Innovation') || name.includes('Incubation')) return VENUE_PHOTO_PRESETS[5].url;
+  if (name.includes('Amphitheatre')) return VENUE_PHOTO_PRESETS[6].url;
+  if (name.includes('Boardroom')) return VENUE_PHOTO_PRESETS[7].url;
+  if (name.includes('Sports Arena')) return VENUE_PHOTO_PRESETS[8].url;
+  if (name.includes('Terrace') || name.includes('UniMall')) return VENUE_PHOTO_PRESETS[9].url;
 
   return null;
 }

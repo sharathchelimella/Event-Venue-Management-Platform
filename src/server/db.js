@@ -581,6 +581,22 @@ class CampusMongoEngine {
     return venue || null;
   }
 
+  async findVenueByName(name) {
+    if (!name) return null;
+    const cleanName = name.trim();
+    if (this.isConnectedToMongo) {
+      const escaped = cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const venue = await VenueModel.findOne({
+        venue_name: new RegExp(`^${escaped}$`, 'i'),
+      }).lean();
+      return venue ? { ...venue, _id: venue._id.toString() } : null;
+    }
+    const venue = this.state.venues.find(
+      (v) => v.venue_name.toLowerCase() === cleanName.toLowerCase()
+    );
+    return venue || null;
+  }
+
   async createVenue(data) {
     const venuePayload = {
       venue_name: (data.venue_name || '').trim(),

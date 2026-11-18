@@ -6,6 +6,157 @@
 
 import { db, VenueModel, EventModel } from './db.js';
 
+export const ADDITIONAL_CAMPUS_VENUES = [
+  {
+    venue_name: 'Innovation & Incubation Hub',
+    location_type: 'in_campus',
+    max_capacity: 280,
+    coverImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Startup Pitch Arena & Open Workspaces',
+        isCover: true,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Collaborative Glass Ideation Pods',
+        isCover: false,
+      },
+    ],
+    description:
+      'Modern Silicon Valley-style startup incubation arena equipped with dual 4K presentation displays, modular breakout pods, ergonomic seating, and high-density 1Gbps Wi-Fi for hackathons and demo days.',
+    facilities: [
+      'High-Speed 1Gbps Wi-Fi',
+      'Central Air Conditioning',
+      'Dual 4K Presentation Displays',
+      'Whiteboard & Ideation Walls',
+      'Modular Breakout Pods',
+      'Coffee Barista Station',
+      'Dedicated Multi-Plug Outlets',
+    ],
+    pricing: { pricingType: 'Free', price: 0, currency: 'INR' },
+  },
+  {
+    venue_name: 'Campus Open-Air Amphitheatre',
+    location_type: 'in_campus',
+    max_capacity: 1800,
+    coverImage: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Acoustic Stone Tiered Seating & Stage',
+        isCover: true,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Evening Concert Lighting Rig',
+        isCover: false,
+      },
+    ],
+    description:
+      'Architectural semicircular stone amphitheatre with tiered acoustic seating overlooking the central university greens. Ideal for unplugged musical gigs, street plays (Nukkad Natak), cultural poetry slams, and award ceremonies.',
+    facilities: [
+      'Tiered Stone Seating',
+      'Surround Sound Stage',
+      'Floodlights & Stage Rig',
+      'Green Rooms Access',
+      'Wheelchair Ramp',
+      'Multiple Entry Stairways',
+    ],
+    pricing: { pricingType: 'Free', price: 0, currency: 'INR' },
+  },
+  {
+    venue_name: 'Central Library Executive Boardroom',
+    location_type: 'in_campus',
+    max_capacity: 65,
+    coverImage: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Mahogany Conference Table & Paneling',
+        isCover: true,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Smart Video Telepresence Screen',
+        isCover: false,
+      },
+    ],
+    description:
+      'Prestigious executive boardroom featuring bespoke mahogany conference tables, ergonomic leather seating, Cisco 4K dual-screen video telepresence, and acoustic soundproofing for syndicate sessions, academic councils, and guest speaker roundtables.',
+    facilities: [
+      'Cisco 4K Telepresence',
+      'Automated Array Microphones',
+      'Central Air Conditioning',
+      'Leather Ergonomic Seating',
+      'Private Foyer & High Tea Bar',
+      'Smart Interactive Whiteboard',
+    ],
+    pricing: { pricingType: 'Free', price: 0, currency: 'INR' },
+  },
+  {
+    venue_name: 'Indoor Multi-Purpose Sports Arena',
+    location_type: 'in_campus',
+    max_capacity: 3200,
+    coverImage: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Indoor Hardwood Court & Bleachers',
+        isCover: true,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Spectator Gallery & Courtside View',
+        isCover: false,
+      },
+    ],
+    description:
+      'Spacious multi-sport indoor stadium fitted with certified maple hardwood court flooring, electronic scoreboards, high-mast LED arena lights, and retractable bleachers. Built for basketball leagues, badminton tournaments, esports arenas, and athletic conventions.',
+    facilities: [
+      'Maple Wood Court Flooring',
+      'Electronic LED Scoreboard',
+      'Retractable Bleachers',
+      'Locker Rooms & Showers',
+      'First Aid Medical Station',
+      'High-Mast Arena Lighting',
+      'Dedicated Parking',
+    ],
+    pricing: { pricingType: 'Free', price: 0, currency: 'INR' },
+  },
+  {
+    venue_name: 'UniMall Sky Terrace & Pavilion',
+    location_type: 'in_campus',
+    max_capacity: 550,
+    coverImage: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Panoramic Rooftop Deck & Festoon Lighting',
+        isCover: true,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Evening Networking Reception Setup',
+        isCover: false,
+      },
+    ],
+    description:
+      'Vibrant elevated rooftop deck overlooking the central university promenade, adorned with festoon fairy lighting, open-air wooden gazebos, and modular buffet food counters. Ideal for student mixers, alumni reunions, sunset acoustic sessions, and startup demo festivals.',
+    facilities: [
+      'Panoramic Campus Skyline',
+      'Festoon Fairy Lights',
+      'Canopy Gazebos',
+      'Buffet Food & Mocktail Counters',
+      'Ambient Sound System',
+      'High-Speed Wi-Fi',
+      'Elevator Access',
+    ],
+    pricing: { pricingType: 'Free', price: 0, currency: 'INR' },
+  },
+];
+
 export async function connectAndSeedDB() {
   await db.connect();
 
@@ -234,7 +385,84 @@ export async function connectAndSeedDB() {
             'Collaborative smart classroom with modular breakout tables, digital interactive whiteboards, and recording cameras.',
           facilities: ['Wi-Fi', 'Air conditioning', 'Smart Board', 'Whiteboard', 'Modular Seating'],
         },
+        'Innovation & Incubation Hub': {
+          coverImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+          description:
+            'Modern Silicon Valley-style startup incubation arena equipped with dual 4K presentation displays, modular breakout pods, ergonomic seating, and high-density 1Gbps Wi-Fi for hackathons and demo days.',
+          facilities: [
+            'High-Speed 1Gbps Wi-Fi',
+            'Central Air Conditioning',
+            'Dual 4K Presentation Displays',
+            'Whiteboard & Ideation Walls',
+            'Modular Breakout Pods',
+            'Coffee Barista Station',
+            'Dedicated Multi-Plug Outlets',
+          ],
+        },
+        'Campus Open-Air Amphitheatre': {
+          coverImage: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=1200&q=80',
+          description:
+            'Architectural semicircular stone amphitheatre with tiered acoustic seating overlooking the central university greens. Ideal for unplugged musical gigs, street plays (Nukkad Natak), cultural poetry slams, and award ceremonies.',
+          facilities: [
+            'Tiered Stone Seating',
+            'Surround Sound Stage',
+            'Floodlights & Stage Rig',
+            'Green Rooms Access',
+            'Wheelchair Ramp',
+            'Multiple Entry Stairways',
+          ],
+        },
+        'Central Library Executive Boardroom': {
+          coverImage: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&w=1200&q=80',
+          description:
+            'Prestigious executive boardroom featuring bespoke mahogany conference tables, ergonomic leather seating, Cisco 4K dual-screen video telepresence, and acoustic soundproofing for syndicate sessions, academic councils, and guest speaker roundtables.',
+          facilities: [
+            'Cisco 4K Telepresence',
+            'Automated Array Microphones',
+            'Central Air Conditioning',
+            'Leather Ergonomic Seating',
+            'Private Foyer & High Tea Bar',
+            'Smart Interactive Whiteboard',
+          ],
+        },
+        'Indoor Multi-Purpose Sports Arena': {
+          coverImage: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
+          description:
+            'Spacious multi-sport indoor stadium fitted with certified maple hardwood court flooring, electronic scoreboards, high-mast LED arena lights, and retractable bleachers. Built for basketball leagues, badminton tournaments, esports arenas, and athletic conventions.',
+          facilities: [
+            'Maple Wood Court Flooring',
+            'Electronic LED Scoreboard',
+            'Retractable Bleachers',
+            'Locker Rooms & Showers',
+            'First Aid Medical Station',
+            'High-Mast Arena Lighting',
+            'Dedicated Parking',
+          ],
+        },
+        'UniMall Sky Terrace & Pavilion': {
+          coverImage: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80',
+          description:
+            'Vibrant elevated rooftop deck overlooking the central university promenade, adorned with festoon fairy lighting, open-air wooden gazebos, and modular buffet food counters. Ideal for student mixers, alumni reunions, sunset acoustic sessions, and startup demo festivals.',
+          facilities: [
+            'Panoramic Campus Skyline',
+            'Festoon Fairy Lights',
+            'Canopy Gazebos',
+            'Buffet Food & Mocktail Counters',
+            'Ambient Sound System',
+            'High-Speed Wi-Fi',
+            'Elevator Access',
+          ],
+        },
       };
+
+      // Seed any missing additional campus venues
+      for (const addVenue of ADDITIONAL_CAMPUS_VENUES) {
+        const found = await db.findVenueByName(addVenue.venue_name);
+        if (!found) {
+          console.log(`[Seeder] Seeding new venue: ${addVenue.venue_name}`);
+          await db.createVenue(addVenue);
+        }
+      }
 
       const EVENT_POSTER_MAP = {
         'HackCampus 2026: 36-Hour National Hackathon': {

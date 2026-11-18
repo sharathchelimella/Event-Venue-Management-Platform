@@ -457,7 +457,13 @@ export function evaluateVenueSuitability(venue, preferences) {
   // 3. Indoor vs Outdoor Fit
   const venueName = (venue.venue_name || '').toLowerCase();
   const venueCat = (venue.category || '').toLowerCase();
-  const isOutdoorVenue = venueName.includes('ground') || venueName.includes('lawn') || venueName.includes('outdoor') || venueCat.includes('outdoor');
+  const isOutdoorVenue =
+    venueName.includes('ground') ||
+    venueName.includes('lawn') ||
+    venueName.includes('outdoor') ||
+    venueName.includes('amphitheatre') ||
+    venueName.includes('terrace') ||
+    venueCat.includes('outdoor');
 
   if (indoorOutdoor.includes('outdoor')) {
     if (isOutdoorVenue) {
