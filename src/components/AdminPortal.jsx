@@ -11,6 +11,17 @@ import {
   ShieldCheck,
   Play,
   RotateCw,
+  Building2,
+  MapPin,
+  Users,
+  Phone,
+  Mail,
+  ExternalLink,
+  MessageSquare,
+  AlertTriangle,
+  Clock,
+  DollarSign,
+  History,
 } from 'lucide-react';
 
 export const AdminPortal = ({
@@ -50,6 +61,31 @@ export const AdminPortal = ({
   const [simResult, setSimResult] = useState(null);
   const [simulating, setSimulating] = useState(false);
 
+  // Venue Listings Submissions State
+  const [venueListings, setVenueListings] = useState([]);
+  const [loadingListings, setLoadingListings] = useState(false);
+  const [listingFilter, setListingFilter] = useState('all');
+  const [processingListingId, setProcessingListingId] = useState(null);
+  const [moderationModal, setModerationModal] = useState({
+    isOpen: false,
+    listing: null,
+    targetStatus: 'Approved',
+    remarks: '',
+  });
+
+  // Load Venue Submissions
+  const loadVenueListings = async () => {
+    setLoadingListings(true);
+    try {
+      const data = await api.getAdminListings();
+      setVenueListings(data || []);
+    } catch (err) {
+      console.error('Failed to load admin venue listings', err);
+    } finally {
+      setLoadingListings(false);
+    }
+  };
+
   // Load RLS Data
   const loadRLSData = async () => {
     setLoadingRLS(true);
@@ -68,10 +104,41 @@ export const AdminPortal = ({
   };
 
   useEffect(() => {
+    loadVenueListings();
+  }, []);
+
+  useEffect(() => {
     if (activeSubTab === 'rls') {
       loadRLSData();
+    } else if (activeSubTab === 'venue-requests') {
+      loadVenueListings();
     }
   }, [activeSubTab]);
+
+  const handleUpdateListingStatus = async (listingId, status, remarks = '') => {
+    setProcessingListingId(listingId);
+    setActionMessage(null);
+    try {
+      const updated = await api.updateListingStatus(listingId, status, remarks);
+      setActionMessage({
+        type: 'success',
+        text: `Venue "${updated.venueName}" has been updated to "${status}".`,
+      });
+      setVenueListings((prev) =>
+        prev.map((l) => (l._id === listingId ? { ...l, ...updated } : l))
+      );
+      setModerationModal({ isOpen: false, listing: null, targetStatus: 'Approved', remarks: '' });
+      await onRefreshVenues();
+      await onRefreshFeed();
+    } catch (err) {
+      setActionMessage({
+        type: 'error',
+        text: err.message || 'Failed to update venue listing status.',
+      });
+    } finally {
+      setProcessingListingId(null);
+    }
+  };
 
   const handleApprove = async (event) => {
     setProcessingId(event._id);
@@ -213,6 +280,22 @@ export const AdminPortal = ({
             )}
           </button>
           <button
+            onClick={() => setActiveSubTab('venue-requests')}
+            className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+              activeSubTab === 'venue-requests'
+                ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Venue Listing Requests</span>
+            {venueListings.filter((l) => l.approvalStatus === 'Pending Approval').length > 0 && (
+              <span className="bg-indigo-100 text-indigo-800 text-[10px] font-mono font-bold px-1.5 rounded">
+                {venueListings.filter((l) => l.approvalStatus === 'Pending Approval').length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setActiveSubTab('venues')}
             className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 ${
               activeSubTab === 'venues'
@@ -258,6 +341,384 @@ export const AdminPortal = ({
           >
             Dismiss
           </button>
+        </div>
+      )}
+
+      {/* SUB-TAB: VENUE LISTING REQUESTS */}
+      {activeSubTab === 'venue-requests' && (
+        <div className="space-y-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900">Venue Listing Requests & Moderation</h3>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {venueListings.length} Submissions
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Review community and partner venue submissions, verify owner identities and safety compliance, and approve or request corrections.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={loadVenueListings}
+                className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                title="Refresh Submissions"
+              >
+                <RotateCw className={`w-4 h-4 ${loadingListings ? 'animate-spin' : ''}`} />
+              </button>
+
+              <select
+                value={listingFilter}
+                onChange={(e) => setListingFilter(e.target.value)}
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white focus:outline-hidden focus:border-indigo-600"
+              >
+                <option value="all">All Submissions ({venueListings.length})</option>
+                <option value="Pending Approval">
+                  Pending Approval ({venueListings.filter((l) => l.approvalStatus === 'Pending Approval').length})
+                </option>
+                <option value="Changes Requested">
+                  Changes Requested ({venueListings.filter((l) => l.approvalStatus === 'Changes Requested').length})
+                </option>
+                <option value="Approved">
+                  Approved ({venueListings.filter((l) => l.approvalStatus === 'Approved').length})
+                </option>
+                <option value="Rejected">
+                  Rejected ({venueListings.filter((l) => l.approvalStatus === 'Rejected').length})
+                </option>
+              </select>
+            </div>
+          </div>
+
+          {loadingListings ? (
+            <div className="space-y-4 animate-pulse">
+              <div className="h-44 bg-white border border-slate-200 rounded-2xl" />
+              <div className="h-44 bg-white border border-slate-200 rounded-2xl" />
+            </div>
+          ) : venueListings.filter((l) => listingFilter === 'all' || l.approvalStatus === listingFilter).length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-xs text-slate-500">
+              No venue listing submissions found for the selected filter.
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {venueListings
+                .filter((l) => listingFilter === 'all' || l.approvalStatus === listingFilter)
+                .map((listing) => {
+                  const cover =
+                    listing.images?.find((img) => img.isCover)?.url ||
+                    listing.images?.[0]?.url ||
+                    'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80';
+                  const owner =
+                    typeof listing.ownerId === 'object' ? listing.ownerId : null;
+
+                  return (
+                    <div
+                      key={listing._id}
+                      className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs hover:border-slate-300 transition-all flex flex-col"
+                    >
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
+                        {/* Cover Image & Category */}
+                        <div className="lg:col-span-4 space-y-3">
+                          <div className="aspect-16/10 rounded-xl overflow-hidden bg-slate-100 relative border border-slate-200">
+                            <img
+                              src={cover}
+                              alt={listing.venueName}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">
+                              {listing.category}
+                            </div>
+                            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-mono px-2 py-0.5 rounded-md">
+                              {listing.images?.length || 0} photos
+                            </div>
+                          </div>
+
+                          {/* Owner Profile Badge */}
+                          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                            <div className="text-[10px] uppercase font-bold text-slate-400">
+                              Submitted By / Manager
+                            </div>
+                            <div className="font-bold text-slate-900">{listing.contactName}</div>
+                            <div className="text-[11px] text-slate-600 flex items-center gap-1.5 truncate">
+                              <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                              <a href={`mailto:${listing.contactEmail}`} className="hover:underline truncate">
+                                {listing.contactEmail}
+                              </a>
+                            </div>
+                            <div className="text-[11px] text-slate-600 flex items-center gap-1.5">
+                              <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                              <a href={`tel:${listing.contactPhone}`} className="hover:underline">
+                                {listing.contactPhone}
+                              </a>
+                            </div>
+                            {listing.organizationName && (
+                              <div className="text-[10px] text-slate-500 pt-0.5">
+                                Org: <span className="font-semibold text-slate-700">{listing.organizationName}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Middle: Venue Details */}
+                        <div className="lg:col-span-8 space-y-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                            <div>
+                              <h4 className="text-lg font-bold text-slate-900">{listing.venueName}</h4>
+                              <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                                <MapPin className="w-3.5 h-3.5 text-indigo-600" />
+                                <span>
+                                  {listing.city}, {listing.state} ({listing.pinCode})
+                                </span>
+                                <span>•</span>
+                                <span>ID: {(listing._id || '').slice(-6)}</span>
+                              </div>
+                            </div>
+
+                            <div>
+                              <span
+                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${
+                                  listing.approvalStatus === 'Approved'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : listing.approvalStatus === 'Changes Requested'
+                                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                    : listing.approvalStatus === 'Rejected'
+                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                }`}
+                              >
+                                {listing.approvalStatus}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-slate-700 leading-relaxed font-normal">
+                            {listing.description}
+                          </p>
+
+                          {/* Specifications Grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                              <div className="text-[10px] text-slate-400 font-bold uppercase">Capacity</div>
+                              <div className="font-extrabold text-slate-900 mt-0.5">
+                                {listing.capacity} Guests
+                              </div>
+                            </div>
+                            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                              <div className="text-[10px] text-slate-400 font-bold uppercase">Pricing Model</div>
+                              <div className="font-extrabold text-slate-900 mt-0.5">
+                                {listing.pricing?.pricingType === 'Free' ? (
+                                  <span className="text-emerald-600">Free</span>
+                                ) : listing.pricing?.pricingType === 'Custom Quote' ? (
+                                  <span className="text-indigo-600">Custom</span>
+                                ) : (
+                                  `₹${Number(listing.pricing?.price || 0).toLocaleString()} / ${listing.pricing?.pricingType?.replace('Per ', '')}`
+                                )}
+                              </div>
+                            </div>
+                            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                              <div className="text-[10px] text-slate-400 font-bold uppercase">Hours</div>
+                              <div className="font-semibold text-slate-800 mt-0.5">
+                                {listing.operatingHours?.openingTime} - {listing.operatingHours?.closingTime}
+                              </div>
+                            </div>
+                            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                              <div className="text-[10px] text-slate-400 font-bold uppercase">Street Address</div>
+                              <div className="font-semibold text-slate-800 mt-0.5 truncate" title={listing.address}>
+                                {listing.address}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Facilities */}
+                          <div className="space-y-1">
+                            <div className="text-[11px] font-bold text-slate-500 uppercase">
+                              Amenities Provided
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {(listing.facilities || []).map((f) => (
+                                <span
+                                  key={f}
+                                  className="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 font-medium"
+                                >
+                                  {f}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Admin Remarks Callout if existing */}
+                          {listing.adminRemarks && (
+                            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+                              <div className="font-bold text-amber-950 flex items-center gap-1.5">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                                Current Admin Remarks:
+                              </div>
+                              <div className="italic text-amber-800">{listing.adminRemarks}</div>
+                            </div>
+                          )}
+
+                          {/* Change History Log Accordion */}
+                          {listing.changeHistory && listing.changeHistory.length > 0 && (
+                            <div className="text-xs pt-1">
+                              <details className="cursor-pointer group">
+                                <summary className="font-bold text-slate-600 hover:text-slate-900 inline-flex items-center gap-1">
+                                  <History className="w-3.5 h-3.5" />
+                                  <span>Audit & Change History ({listing.changeHistory.length})</span>
+                                </summary>
+                                <div className="mt-2 space-y-1.5 pl-4 border-l-2 border-slate-200">
+                                  {listing.changeHistory.map((item, idx) => (
+                                    <div key={idx} className="text-[11px] text-slate-600">
+                                      <span className="font-mono text-slate-400">
+                                        {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>{' '}
+                                      — <span className="font-semibold text-slate-800">{item.action}</span> ({item.performedBy}):{' '}
+                                      <span className="text-slate-500">{item.details}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Admin Action Bar */}
+                      <div className="bg-slate-50 p-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                        <div className="text-xs text-slate-500 font-mono">
+                          Submitted: {new Date(listing.createdAt).toLocaleDateString()}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {listing.approvalStatus !== 'Approved' && (
+                            <button
+                              type="button"
+                              disabled={processingListingId === listing._id}
+                              onClick={() => handleUpdateListingStatus(listing._id, 'Approved', 'Approved by administrator')}
+                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Approve Listing</span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            disabled={processingListingId === listing._id}
+                            onClick={() =>
+                              setModerationModal({
+                                isOpen: true,
+                                listing,
+                                targetStatus: 'Changes Requested',
+                                remarks: listing.adminRemarks || '',
+                              })
+                            }
+                            className="px-3.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          >
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            <span>Request Corrections</span>
+                          </button>
+
+                          {listing.approvalStatus !== 'Rejected' && (
+                            <button
+                              type="button"
+                              disabled={processingListingId === listing._id}
+                              onClick={() =>
+                                setModerationModal({
+                                  isOpen: true,
+                                  listing,
+                                  targetStatus: 'Rejected',
+                                  remarks: listing.adminRemarks || '',
+                                })
+                              }
+                              className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              <span>Reject Submission</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* Admin Moderation Remarks Modal */}
+          {moderationModal.isOpen && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-2xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleIn">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h4 className="text-sm font-bold text-slate-900">
+                    {moderationModal.targetStatus === 'Changes Requested'
+                      ? 'Request Corrections from Venue Owner'
+                      : 'Reject Venue Listing'}
+                  </h4>
+                  <button
+                    onClick={() =>
+                      setModerationModal({ isOpen: false, listing: null, targetStatus: 'Approved', remarks: '' })
+                    }
+                    className="text-slate-400 hover:text-slate-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="text-xs text-slate-600 leading-relaxed">
+                  Provide detailed feedback or instructions for the venue owner of{' '}
+                  <span className="font-bold text-slate-900">{moderationModal.listing?.venueName}</span>. This message will be displayed prominently on their listing dashboard.
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">
+                    Administrator Remarks / Required Changes <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder="e.g. Please update your pricing policy to reflect per-day rates, or upload higher quality photos of the stage layout."
+                    value={moderationModal.remarks}
+                    onChange={(e) =>
+                      setModerationModal((prev) => ({ ...prev, remarks: e.target.value }))
+                    }
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:border-indigo-600 resize-y"
+                    required
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setModerationModal({ isOpen: false, listing: null, targetStatus: 'Approved', remarks: '' })
+                    }
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!moderationModal.remarks.trim()}
+                    onClick={() =>
+                      handleUpdateListingStatus(
+                        moderationModal.listing._id,
+                        moderationModal.targetStatus,
+                        moderationModal.remarks
+                      )
+                    }
+                    className={`px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-colors disabled:opacity-50 ${
+                      moderationModal.targetStatus === 'Changes Requested'
+                        ? 'bg-purple-600 hover:bg-purple-700'
+                        : 'bg-rose-600 hover:bg-rose-700'
+                    }`}
+                  >
+                    Submit {moderationModal.targetStatus}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

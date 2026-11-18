@@ -33,7 +33,31 @@ A production-grade, full-stack campus venue booking and event management platfor
 - **Compound Unique Index Guard**: Enforced compound constraint on `{ event_id: 1, user_id: 1 }`, guaranteeing single-ticket limits per attendee.
 - **Atomic Capacity Guard**: High-concurrency `findOneAndUpdate` query with `{ registered_count: { $lt: max_capacity } }` and `$inc: { registered_count: 1 }`, eliminating overbooking race conditions under high traffic spikes.
 
-### 5. Performance, Telemetry & Web Vitals
+### 5. "List Your Venue" & Community Spaces Platform
+- **Interactive 6-Step Listing Submission**: Dedicated progressive venue onboarding wizard:
+  - **Step 1 — Basic Venue Details**: Category selection (Auditorium, Banquet Hall, Conference Hall, Seminar Hall, Outdoor Space, Other), descriptions, guest seating capacity, and customizable suitable event type tags.
+  - **Step 2 — Location & Map Preview**: Street address, city, state, postal code, landmark, and live Google Maps URL verification.
+  - **Step 3 — Contact Information & Privacy Controls**: Owner name, contact email, mobile, alternative phone, WhatsApp, and granular public visibility toggles (`showEmail`, `showPhone`, `showWhatsapp`) to protect private owner data from unauthenticated scraping.
+  - **Step 4 — Facilities & Tariff**: Amenities multi-selector (Parking, Wi-Fi, AC, Projector, Sound system, Stage, Seating, Catering, Wheelchair ramp, Washrooms, Power backup, Green room), pricing models (`Free`, `Per Hour`, `Per Day`, `Custom Quote`), and operating schedules.
+  - **Step 5 — Multi-Photo Uploader**: Multi-image drag-and-drop or file select with local `FileReader` preview, 5MB file validation, cover image star selector, captions, and curated demo presets.
+  - **Step 6 — Review & Ownership Declaration**: Complete summary preview with quick jump-to-edit links and mandatory ownership/authorization declaration.
+- **"My Listings" Owner Management Console**:
+  - Live status tracking with badges: `Pending Approval`, `Approved`, `Changes Requested`, and `Rejected`.
+  - Prominent Administrator Remarks callout explaining required corrections or rejection reasons.
+  - Inline venue editing with automated re-approval trigger on key property modifications.
+  - Venue deletion and deactivation controls.
+  - **Received Inquiries Feed**: Live management of attendee/organizer inquiries with status pipeline (`New`, `Contacted`, `Resolved`, `Archived`).
+- **Administrative Venue Moderation Center**:
+  - "Venue Listing Requests" tab in the Admin Console with real-time pending badges.
+  - Full submission inspection: verify photos, capacity, facilities, pricing, location, and owner contacts.
+  - One-click approval, corrections request with admin remarks modal, rejection with feedback, and suspension.
+  - Audit trail tracking chronological submission and moderation history.
+- **Public Venue Directory & Inquiries**:
+  - Unified browsing of both Campus Auditoriums and Community/Partner Spaces with "Partner Listed" badges.
+  - Rich interactive `VenueDetailModal` featuring photo carousel, specifications, amenities, location, and public owner contacts.
+  - Direct "Contact Venue Owner / Send Inquiry" form with guest count slider, event date selection, and anti-spam rate limiting.
+
+### 6. Performance, Telemetry & Web Vitals
 - **Core Web Vitals HUD**: Embedded real-time telemetry widget tracking FCP, LCP, CLS, INP, and TTFB, along with memory usage and interaction latency benchmarking.
 - **Optimized Bundling**: Route-level code-splitting with React `lazy` and `Suspense`, zero-CLS layout skeletons, and manual vendor chunking.
 - **Built-in Benchmark Suite**: CLI test harness covering load, stress, spike, endurance, and database indexing benchmarks.
@@ -132,6 +156,21 @@ For instant evaluation, the database auto-seeds test accounts on initial boot:
 | `GET` | `/api/venues` | Public | List all venues, locations, capacities, and booked dates |
 | `POST` | `/api/venues` | Admin | Register a new campus venue |
 | `PATCH` | `/api/venues/:id` | Admin | Update venue capacity or facility name |
+
+### Community Venue Listings & Inquiries
+| Method | Endpoint | Access Role | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/listings` | Authenticated | Submit new venue listing for administrative review |
+| `GET` | `/api/listings/approved` | Public | Search approved community and partner venue listings |
+| `GET` | `/api/listings/my-listings` | Authenticated | Retrieve venue listings submitted by the current user |
+| `GET` | `/api/listings/my-inquiries` | Authenticated | Retrieve booking inquiries received for user's venues |
+| `PATCH` | `/api/listings/inquiries/:id` | Authenticated | Update inquiry status (`New`, `Contacted`, `Resolved`, `Archived`) |
+| `GET` | `/api/listings/:id` | Public / Auth | View venue details (masks contacts unless owner/admin) |
+| `PUT` | `/api/listings/:id` | Owner / Admin | Update venue details (resets approved status if key specs change) |
+| `DELETE` | `/api/listings/:id` | Owner / Admin | Delete venue listing and its associated inquiries |
+| `GET` | `/api/admin/listings` | Admin | Retrieve all venue submissions across all statuses |
+| `PATCH` | `/api/admin/listings/:id/status` | Admin | Approve, reject, or request changes with admin remarks |
+| `POST` | `/api/listings/:id/inquire` | Public / Auth | Send booking inquiry to venue owner (rate-limited) |
 
 ### Events & Bookings
 | Method | Endpoint | Access Role | Description |

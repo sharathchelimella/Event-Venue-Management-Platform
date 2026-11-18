@@ -263,4 +263,85 @@ export const api = {
       body: JSON.stringify(data),
     });
   },
+
+  // Community Venue Listings & Inquiries
+  async createListing(data) {
+    const res = await apiRequest('/api/listings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.listing;
+  },
+
+  async getApprovedListings(params = {}) {
+    const query = new URLSearchParams();
+    if (params.search) query.set('search', params.search);
+    if (params.category && params.category !== 'all') query.set('category', params.category);
+    if (params.city && params.city !== 'all') query.set('city', params.city);
+    if (params.minCapacity) query.set('minCapacity', params.minCapacity);
+
+    const queryString = query.toString();
+    const endpoint = `/api/listings/approved${queryString ? `?${queryString}` : ''}`;
+    const res = await apiRequest(endpoint);
+    return res.listings || [];
+  },
+
+  async getMyListings() {
+    const res = await apiRequest('/api/listings/my-listings');
+    return res.listings || [];
+  },
+
+  async getListingDetails(id) {
+    const res = await apiRequest(`/api/listings/${id}`);
+    return res.listing;
+  },
+
+  async updateListing(id, updates) {
+    const res = await apiRequest(`/api/listings/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return res.listing;
+  },
+
+  async deleteListing(id) {
+    const res = await apiRequest(`/api/listings/${id}`, {
+      method: 'DELETE',
+    });
+    return res;
+  },
+
+  async getAdminListings() {
+    const res = await apiRequest('/api/admin/listings');
+    return res.listings || [];
+  },
+
+  async updateListingStatus(id, status, adminRemarks = '') {
+    const res = await apiRequest(`/api/admin/listings/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, adminRemarks }),
+    });
+    return res.listing;
+  },
+
+  async sendVenueInquiry(listingId, data) {
+    const res = await apiRequest(`/api/listings/${listingId}/inquire`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+
+  async getMyInquiries() {
+    const res = await apiRequest('/api/listings/my-inquiries');
+    return res.inquiries || [];
+  },
+
+  async updateInquiryStatus(inquiryId, status) {
+    const res = await apiRequest(`/api/listings/inquiries/${inquiryId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+    return res.inquiry;
+  },
 };

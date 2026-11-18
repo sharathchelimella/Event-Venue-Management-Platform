@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, LogIn } from 'lucide-react';
+import { LogOut, LogIn, Plus, Building2, Sparkles } from 'lucide-react';
 
 export const Header = ({
   currentUser,
@@ -7,13 +7,22 @@ export const Header = ({
   setActiveTab,
   onOpenAuth,
   onLogout,
+  onListVenue,
   pendingCount = 0,
 }) => {
+  const handleListVenueClick = () => {
+    if (onListVenue) {
+      onListVenue();
+    } else {
+      setActiveTab('list-venue');
+    }
+  };
+
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
       {/* Main Top Bar Contract: 3 Zones */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-8">
+        <div className="flex items-center justify-between h-16 gap-6">
           {/* Zone 1: Brand Wordmark */}
           <div className="flex items-center gap-3 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-black text-sm tracking-tighter shadow-md shadow-indigo-500/20">
@@ -28,7 +37,7 @@ export const Header = ({
           </div>
 
           {/* Zone 2: Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600">
             <button
               onClick={() => setActiveTab('feed')}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 ${
@@ -46,6 +55,19 @@ export const Header = ({
             >
               Venues Directory
             </button>
+
+            {currentUser && (
+              <button
+                onClick={() => setActiveTab('my-listings')}
+                className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                  activeTab === 'my-listings'
+                    ? 'text-slate-900 font-semibold border-b-2 border-slate-900 pb-0.5'
+                    : ''
+                }`}
+              >
+                <span>My Listings</span>
+              </button>
+            )}
 
             {currentUser && currentUser.role === 'Student' && (
               <button
@@ -86,8 +108,21 @@ export const Header = ({
             )}
           </nav>
 
-          {/* Zone 3: Primary Action / User Profile */}
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Zone 3: Primary Action / List Your Venue / User Profile */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            {/* Prominent List Your Venue CTA */}
+            <button
+              onClick={handleListVenueClick}
+              className={`hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                activeTab === 'list-venue'
+                  ? 'bg-indigo-600 text-white shadow-indigo-600/30'
+                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+              }`}
+            >
+              <Plus className="w-3.5 h-3.5 text-indigo-600" />
+              <span>List Your Venue</span>
+            </button>
+
             {currentUser ? (
               <div className="flex items-center gap-3">
                 {currentUser.avatar ? (
@@ -134,7 +169,7 @@ export const Header = ({
         </div>
 
         {/* Mobile Navigation Row */}
-        <div className="flex md:hidden items-center gap-4 py-2 border-t border-slate-100 overflow-x-auto text-xs font-medium text-slate-600">
+        <div className="flex lg:hidden items-center gap-3.5 py-2.5 border-t border-slate-100 overflow-x-auto text-xs font-medium text-slate-600">
           <button
             onClick={() => setActiveTab('feed')}
             className={`whitespace-nowrap ${activeTab === 'feed' ? 'text-slate-950 font-bold' : ''}`}
@@ -147,6 +182,23 @@ export const Header = ({
           >
             Venues
           </button>
+          <button
+            onClick={handleListVenueClick}
+            className={`whitespace-nowrap font-bold text-indigo-600 flex items-center gap-1 ${
+              activeTab === 'list-venue' ? 'underline' : ''
+            }`}
+          >
+            <Plus className="w-3 h-3" />
+            List Venue
+          </button>
+          {currentUser && (
+            <button
+              onClick={() => setActiveTab('my-listings')}
+              className={`whitespace-nowrap ${activeTab === 'my-listings' ? 'text-slate-950 font-bold' : ''}`}
+            >
+              My Listings
+            </button>
+          )}
           {currentUser?.role === 'Student' && (
             <button
               onClick={() => setActiveTab('my-registrations')}

@@ -21,6 +21,13 @@ const AuthModal = lazy(() =>
 const WebVitalsHUD = lazy(() =>
   import('./components/WebVitalsHUD.jsx').then((m) => ({ default: m.WebVitalsHUD }))
 );
+const ListVenueForm = lazy(() =>
+  import('./components/ListVenueForm.jsx').then((m) => ({ default: m.ListVenueForm }))
+);
+const MyListings = lazy(() =>
+  import('./components/MyListings.jsx').then((m) => ({ default: m.MyListings }))
+);
+import { VenueDetailModal } from './components/VenueDetailModal.jsx';
 
 // Zero-CLS Suspense Skeleton matching final view layout
 const PortalSkeleton = () => (
@@ -49,6 +56,11 @@ export default function App() {
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [loadingRegistrations, setLoadingRegistrations] = useState(false);
   const [toasts, setToasts] = useState([]);
+
+  // Venue Listing & Redirection State
+  const [redirectAfterLogin, setRedirectAfterLogin] = useState(null);
+  const [editingVenue, setEditingVenue] = useState(null);
+  const [viewingVenue, setViewingVenue] = useState(null);
 
   // Initialize Web Vitals observer immediately
   useEffect(() => {
@@ -158,12 +170,20 @@ export default function App() {
     initApp();
   }, [refreshVenues, refreshFeed, refreshRegistrations, refreshMyEvents, refreshPendingEvents]);
 
-  // Auth Success Handler with role-based redirection
+  // Auth Success Handler with role-based or requested redirection
   const handleAuthSuccess = (user) => {
     setCurrentUser(user);
     setAuthModalOpen(false);
     addToast('success', `Welcome back, ${user.name}!`);
     refreshRegistrations(user._id);
+
+    // If user intended to navigate somewhere before login (e.g. List Your Venue)
+    if (redirectAfterLogin) {
+      const target = redirectAfterLogin;
+      setRedirectAfterLogin(null);
+      setActiveTab(target);
+      return;
+    }
 
     // Redirect to appropriate role dashboard
     if (user.role === 'Student') {
@@ -175,6 +195,17 @@ export default function App() {
       refreshPendingEvents();
       setActiveTab('admin');
     }
+  };
+
+  const handleOpenListVenue = () => {
+    if (!currentUser) {
+      setRedirectAfterLogin('list-venue');
+      setActiveTab('login');
+      addToast('info', 'Please sign in or create an account to list your venue.');
+      return;
+    }
+    setEditingVenue(null);
+    setActiveTab('list-venue');
   };
 
   // Demo Switch Handler
@@ -193,6 +224,8 @@ export default function App() {
     setCurrentUser(null);
     setMyRegistrations([]);
     setRegisteredEventIds(new Set());
+    setRedirectAfterLogin(null);
+    setEditingVenue(null);
     setActiveTab('login');
     addToast('info', 'You have been signed out.');
   };
@@ -231,6 +264,16 @@ export default function App() {
   };
 
   const handleSelectTab = (tab) => {
+    if (tab === 'list-venue' && !currentUser) {
+      handleOpenListVenue();
+      return;
+    }
+    if (tab === 'my-listings' && !currentUser) {
+      setRedirectAfterLogin('my-listings');
+      setActiveTab('login');
+      addToast('info', 'Please sign in to view your listings.');
+      return;
+    }
     if (tab === 'organizer' && currentUser?.role !== 'Organizer' && currentUser?.role !== 'Admin') {
       setActiveTab('feed');
       return;
@@ -273,6 +316,7 @@ export default function App() {
         onOpenAuth={() => setActiveTab('login')}
         onLogout={handleLogout}
         onDemoSwitch={handleDemoSwitch}
+        onListVenue={handleOpenListVenue}
         pendingCount={pendingEvents.length}
       />
 
@@ -307,7 +351,46 @@ export default function App() {
               }
             }}
             canBook={currentUser?.role === 'Organizer' || currentUser?.role === 'Admin'}
+            currentUser={currentUser}
+            onOpenListVenue={handleOpenListVenue}
           />
+        )}
+
+        {activeTab === 'list-venue' && (
+          <Suspense fallback={<PortalSkeleton />}>
+            <ListVenueForm
+              currentUser={currentUser}
+              initialData={editingVenue}
+              isEditing={Boolean(editingVenue)}
+              onSuccess={(listing, msg) => {
+                addToast('success', msg || 'Venue listing saved successfully!');
+                setEditingVenue(null);
+                setActiveTab('my-listings');
+                refreshVenues();
+              }}
+              onCancel={() => {
+                setEditingVenue(null);
+                setActiveTab('my-listings');
+              }}
+            />
+          </Suspense>
+        )}
+
+        {activeTab === 'my-listings' && (
+          <Suspense fallback={<PortalSkeleton />}>
+            <MyListings
+              currentUser={currentUser}
+              onAddNewVenue={() => {
+                setEditingVenue(null);
+                setActiveTab('list-venue');
+              }}
+              onEditVenue={(venue) => {
+                setEditingVenue(venue);
+                setActiveTab('list-venue');
+              }}
+              onViewVenueDetails={(venue) => setViewingVenue(venue)}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'my-registrations' && currentUser?.role === 'Student' && (
@@ -342,6 +425,17 @@ export default function App() {
           </Suspense>
         )}
       </main>
+
+      {/* Global Venue Detail Modal */}
+      {viewingVenue && (
+        <VenueDetailModal
+          venue={viewingVenue}
+          isOpen={Boolean(viewingVenue)}
+          onClose={() => setViewingVenue(null)}
+          currentUser={currentUser}
+          onInquirySent={(msg) => addToast('success', msg)}
+        />
+      )}
 
       {/* Clean Anti-Slop Footer with Core Web Vitals HUD Launcher */}
       <footer className="mt-auto border-t border-slate-200 bg-white py-6">

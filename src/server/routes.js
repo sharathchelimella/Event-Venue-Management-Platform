@@ -691,3 +691,294 @@ apiRouter.post('/admin/rls/simulate', requireRole(['Admin']), (req, res) => {
   const result = simulateRLSCheck(req.body);
   return res.json(result);
 });
+
+// -----------------------------------------------------------------------------
+// 6. "List Your Venue" Community Listings & Inquiries API
+// -----------------------------------------------------------------------------
+
+// Basic in-memory rate limiter for public inquiry submissions: key -> [timestamps]
+const inquiryRateLimits = new Map();
+
+function checkInquiryRateLimit(key) {
+  const now = Date.now();
+  const windowMs = 10 * 60 * 1000; // 10 minutes
+  const maxSubmissions = 6;
+  const history = inquiryRateLimits.get(key) || [];
+  const validHistory = history.filter((ts) => now - ts < windowMs);
+
+  if (validHistory.length >= maxSubmissions) {
+    return false;
+  }
+
+  validHistory.push(now);
+  inquiryRateLimits.set(key, validHistory);
+  return true;
+}
+
+// POST /api/listings - Create venue listing (Authenticated)
+apiRouter.post('/listings', requireAuth, async (req, res) => {
+  try {
+    const {
+      venueName,
+      category,
+      description,
+      capacity,
+      address,
+      city,
+      state,
+      pinCode,
+      contactName,
+      contactEmail,
+      contactPhone,
+    } = req.body || {};
+
+    if (
+      !venueName ||
+      !category ||
+      !description ||
+      !capacity ||
+      !address ||
+      !city ||
+      !state ||
+      !pinCode ||
+      !contactName ||
+      !contactEmail ||
+      !contactPhone
+    ) {
+      return res.status(400).json({
+        error:
+          'Please complete all required fields: Venue name, category, description, capacity, address, city, state, pin code, contact name, email, and phone.',
+      });
+    }
+
+    const listing = await db.createVenueListing(req.body, req.auth.uid, req.auth.user.name);
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'CREATE_VENUE_LISTING',
+      collection: 'venue_listings',
+      outcome: 'ALLOWED',
+      predicate: 'auth.uid != null',
+      reason: `Created listing "${listing.venueName}" in category "${listing.category}". Queued for admin review.`,
+    });
+
+    return res.status(201).json({ listing });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to submit venue listing.' });
+  }
+});
+
+// GET /api/listings/approved - Public search of approved venue listings
+apiRouter.get('/listings/approved', async (req, res) => {
+  try {
+    const { search, category, city, minCapacity } = req.query || {};
+    const listings = await db.findApprovedVenueListings({
+      search,
+      category,
+      city,
+      minCapacity,
+    });
+    return res.json({ listings });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to search approved venues.' });
+  }
+});
+
+// GET /api/listings/my-listings - Retrieve listings owned by the logged-in user
+apiRouter.get('/listings/my-listings', requireAuth, async (req, res) => {
+  try {
+    const listings = await db.findVenueListingsByOwner(req.auth.uid);
+    return res.json({ listings });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to retrieve your listings.' });
+  }
+});
+
+// GET /api/listings/my-inquiries - Received inquiries for venue owner
+apiRouter.get('/listings/my-inquiries', requireAuth, async (req, res) => {
+  try {
+    const inquiries = await db.findInquiriesByOwner(req.auth.uid);
+    return res.json({ inquiries });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to load inquiries.' });
+  }
+});
+
+// PATCH /api/listings/inquiries/:id - Update inquiry status (Owner)
+apiRouter.patch('/listings/inquiries/:id', requireAuth, async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required.' });
+    }
+
+    const updated = await db.updateInquiryStatus(req.params.id, status, req.auth.uid);
+    return res.json({ inquiry: updated });
+  } catch (err) {
+    const statusCode = err.message?.includes('403') ? 403 : 500;
+    return res.status(statusCode).json({ error: err.message || 'Failed to update inquiry status.' });
+  }
+});
+
+// GET /api/admin/listings - Admin listing submissions queue (All statuses)
+apiRouter.get('/admin/listings', requireRole(['Admin']), async (req, res) => {
+  try {
+    const listings = await db.findAllVenueListingsAdmin();
+    return res.json({ listings });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to fetch admin listings.' });
+  }
+});
+
+// PATCH /api/admin/listings/:id/status - Admin approve / reject / request changes
+apiRouter.patch('/admin/listings/:id/status', requireRole(['Admin']), async (req, res) => {
+  try {
+    const { status, adminRemarks } = req.body || {};
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required.' });
+    }
+
+    const updated = await db.updateVenueListingStatus(
+      req.params.id,
+      status,
+      adminRemarks,
+      req.auth.uid,
+      req.auth.user.name
+    );
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'MODERATE_VENUE_LISTING',
+      collection: 'venue_listings',
+      outcome: 'ALLOWED',
+      predicate: 'auth.role == "Admin"',
+      reason: `Updated venue listing "${updated.venueName}" to status "${status}". Remarks: ${adminRemarks || 'None'}`,
+    });
+
+    return res.json({ listing: updated });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to update listing status.' });
+  }
+});
+
+// GET /api/listings/:id - Retrieve venue details (masks contacts for non-owners)
+apiRouter.get('/listings/:id', async (req, res) => {
+  try {
+    const listing = await db.findVenueListingById(
+      req.params.id,
+      req.auth?.uid,
+      req.auth?.role === 'Admin'
+    );
+
+    if (!listing) {
+      return res.status(404).json({ error: 'Venue listing not found or is currently private.' });
+    }
+
+    return res.json({ listing });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to retrieve venue details.' });
+  }
+});
+
+// PUT /api/listings/:id - Update venue listing (Owner or Admin)
+apiRouter.put('/listings/:id', requireAuth, async (req, res) => {
+  try {
+    const updated = await db.updateVenueListing(
+      req.params.id,
+      req.body,
+      req.auth.uid,
+      req.auth.role === 'Admin',
+      req.auth.user.name
+    );
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'UPDATE_VENUE_LISTING',
+      collection: 'venue_listings',
+      outcome: 'ALLOWED',
+      predicate: 'listing.ownerId == auth.uid OR auth.role == "Admin"',
+      reason: `Updated listing "${updated.venueName}". Current status: "${updated.approvalStatus}".`,
+    });
+
+    return res.json({ listing: updated });
+  } catch (err) {
+    const statusCode = err.message?.includes('403') ? 403 : 500;
+    return res.status(statusCode).json({ error: err.message || 'Failed to update listing.' });
+  }
+});
+
+// DELETE /api/listings/:id - Delete venue listing (Owner or Admin)
+apiRouter.delete('/listings/:id', requireAuth, async (req, res) => {
+  try {
+    await db.deleteVenueListing(req.params.id, req.auth.uid, req.auth.role === 'Admin');
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'DELETE_VENUE_LISTING',
+      collection: 'venue_listings',
+      outcome: 'ALLOWED',
+      predicate: 'listing.ownerId == auth.uid OR auth.role == "Admin"',
+      reason: `Deleted venue listing ${req.params.id}`,
+    });
+
+    return res.json({ success: true, message: 'Venue listing deleted successfully.' });
+  } catch (err) {
+    const statusCode = err.message?.includes('403') ? 403 : 500;
+    return res.status(statusCode).json({ error: err.message || 'Failed to delete listing.' });
+  }
+});
+
+// POST /api/listings/:id/inquire - Submit inquiry to venue owner (Public or Authenticated with anti-spam rate limiting)
+apiRouter.post('/listings/:id/inquire', async (req, res) => {
+  try {
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'guest_client';
+    const rateLimitKey = `${ip}_${req.body?.senderEmail || ''}`;
+
+    if (!checkInquiryRateLimit(rateLimitKey)) {
+      return res.status(429).json({
+        error: 'Too many inquiries sent in a short window. Please wait a few minutes before submitting another request.',
+      });
+    }
+
+    const { senderName, senderEmail, senderPhone, eventDate, guestCount, message } = req.body || {};
+    if (!senderName || !senderEmail || !eventDate || !message) {
+      return res.status(400).json({
+        error: 'Please provide your name, email, event date, and inquiry message.',
+      });
+    }
+
+    const inquiry = await db.createVenueInquiry(
+      {
+        listingId: req.params.id,
+        senderName,
+        senderEmail,
+        senderPhone,
+        eventDate,
+        guestCount,
+        message,
+      },
+      req.auth?.uid
+    );
+
+    logAudit({
+      actor: senderName,
+      actorRole: req.auth?.role || 'Guest',
+      action: 'SUBMIT_VENUE_INQUIRY',
+      collection: 'venue_inquiries',
+      outcome: 'ALLOWED',
+      predicate: 'rate_limit == OK',
+      reason: `Dispatched inquiry for venue listing ${req.params.id} regarding date ${eventDate}.`,
+    });
+
+    return res.status(201).json({
+      inquiry,
+      message: 'Your inquiry has been delivered directly to the venue owner!',
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to send inquiry.' });
+  }
+});
