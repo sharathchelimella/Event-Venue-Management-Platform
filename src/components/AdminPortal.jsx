@@ -25,9 +25,12 @@ import {
   Eye,
   Camera,
   Sparkles,
+  Calendar,
+  Send,
+  UserCheck,
 } from 'lucide-react';
 import { VenueDetailModal } from './VenueDetailModal.jsx';
-import { getVenueCover } from '../utils/imagePlaceholders.js';
+import { getVenueCover, EVENT_POSTER_PRESETS } from '../utils/imagePlaceholders.js';
 
 export const AdminPortal = ({
   pendingEvents = [],
@@ -75,6 +78,59 @@ export const AdminPortal = ({
   const [simResult, setSimResult] = useState(null);
   const [simulating, setSimulating] = useState(false);
 
+  // Listing & Contact Requests State (Private Admin Inquiries)
+  const [contactRequests, setContactRequests] = useState([]);
+  const [loadingContactRequests, setLoadingContactRequests] = useState(false);
+  const [requestTypeFilter, setRequestTypeFilter] = useState('all');
+  const [requestStatusFilter, setRequestStatusFilter] = useState('all');
+  const [updatingRequestId, setUpdatingRequestId] = useState(null);
+  const [editingNotesId, setEditingNotesId] = useState(null);
+  const [notesDraft, setNotesDraft] = useState('');
+
+  // Admin Publish New Event State
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [organizers, setOrganizers] = useState([]);
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventCategory, setNewEventCategory] = useState('Hackathon');
+  const [newEventDescription, setNewEventDescription] = useState('');
+  const [newEventVenueId, setNewEventVenueId] = useState(venues[0]?._id || '');
+  const [newEventOrganizerId, setNewEventOrganizerId] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventTime, setNewEventTime] = useState('10:00 AM - 01:00 PM');
+  const [newEventPoster, setNewEventPoster] = useState('');
+  const [newEventTags, setNewEventTags] = useState('');
+  const [publishingEvent, setPublishingEvent] = useState(false);
+  const [addEventError, setAddEventError] = useState(null);
+
+  // Load Contact Requests
+  const loadContactRequests = async () => {
+    setLoadingContactRequests(true);
+    try {
+      const data = await api.getAdminContactRequests({
+        requestType: requestTypeFilter,
+        status: requestStatusFilter,
+      });
+      setContactRequests(data || []);
+    } catch (err) {
+      console.error('Failed to load contact requests', err);
+    } finally {
+      setLoadingContactRequests(false);
+    }
+  };
+
+  // Load Registered Organizers for Event Assignment
+  const loadOrganizers = async () => {
+    try {
+      const data = await api.getAdminOrganizers();
+      setOrganizers(data || []);
+      if (data && data.length > 0 && !newEventOrganizerId) {
+        setNewEventOrganizerId(data[0]._id);
+      }
+    } catch (err) {
+      console.error('Failed to load organizers', err);
+    }
+  };
+
   // Venue Listings Submissions State
   const [venueListings, setVenueListings] = useState([]);
   const [loadingListings, setLoadingListings] = useState(false);
@@ -119,6 +175,8 @@ export const AdminPortal = ({
 
   useEffect(() => {
     loadVenueListings();
+    loadContactRequests();
+    loadOrganizers();
   }, []);
 
   useEffect(() => {
@@ -126,8 +184,96 @@ export const AdminPortal = ({
       loadRLSData();
     } else if (activeSubTab === 'venue-requests') {
       loadVenueListings();
+    } else if (activeSubTab === 'contact-requests') {
+      loadContactRequests();
     }
-  }, [activeSubTab]);
+  }, [activeSubTab, requestTypeFilter, requestStatusFilter]);
+
+  // Update Contact Request Status
+  const handleUpdateContactStatus = async (id, status) => {
+    setUpdatingRequestId(id);
+    try {
+      const updated = await api.updateAdminContactRequest(id, { status });
+      setContactRequests((prev) => prev.map((r) => (r._id === id ? { ...r, ...updated } : r)));
+    } catch (err) {
+      alert(err.message || 'Failed to update status');
+    } finally {
+      setUpdatingRequestId(null);
+    }
+  };
+
+  // Save Internal Notes on Contact Request
+  const handleSaveNotes = async (id) => {
+    try {
+      const updated = await api.updateAdminContactRequest(id, { internalNotes: notesDraft });
+      setContactRequests((prev) => prev.map((r) => (r._id === id ? { ...r, ...updated } : r)));
+      setEditingNotesId(null);
+    } catch (err) {
+      alert(err.message || 'Failed to save notes');
+    }
+  };
+
+  // Convert Contact Request into Venue Registration Form
+  const handleCreateVenueFromRequest = (req) => {
+    setVenueName(req.itemName || '');
+    setLocationType(req.location?.toLowerCase().includes('off') ? 'out_campus' : 'in_campus');
+    setVenueDescription(req.message || '');
+    setActiveSubTab('venues');
+  };
+
+  // Convert Contact Request into Event Creation Modal
+  const handleCreateEventFromRequest = (req) => {
+    setNewEventTitle(req.itemName || '');
+    setNewEventDescription(req.message || '');
+    setNewEventDate(new Date().toISOString().split('T')[0]);
+    setShowAddEventModal(true);
+  };
+
+  // Admin Directly Publishes New Event
+  const handlePublishAdminEvent = async (e) => {
+    e.preventDefault();
+    setAddEventError(null);
+    if (!newEventTitle.trim() || !newEventDescription.trim() || !newEventVenueId || !newEventDate) {
+      setAddEventError('Please fill in title, description, venue, and date.');
+      return;
+    }
+    setPublishingEvent(true);
+    try {
+      const tags = newEventTags
+        ? newEventTags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [];
+      await api.adminCreateEvent({
+        title: newEventTitle.trim(),
+        category: newEventCategory,
+        description: newEventDescription.trim(),
+        venue_id: newEventVenueId,
+        organizer_id: newEventOrganizerId || undefined,
+        event_date: newEventDate,
+        event_time: newEventTime.trim() || undefined,
+        posterImage: newEventPoster || undefined,
+        tags,
+      });
+      setShowAddEventModal(false);
+      setNewEventTitle('');
+      setNewEventDescription('');
+      setNewEventPoster('');
+      setNewEventTags('');
+      setActionMessage({
+        type: 'success',
+        text: `Event "${newEventTitle.trim()}" published successfully! It is now live on Explore Events and visible in the organizer's dashboard.`,
+      });
+      await onRefreshPending();
+      await onRefreshFeed();
+      await onRefreshVenues();
+    } catch (err) {
+      setAddEventError(err.message || 'Failed to publish event.');
+    } finally {
+      setPublishingEvent(false);
+    }
+  };
 
   const handleUpdateListingStatus = async (listingId, status, remarks = '') => {
     setProcessingListingId(listingId);
@@ -285,60 +431,93 @@ export const AdminPortal = ({
           </p>
         </div>
 
-        {/* Section Navigation Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg text-xs font-medium">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Quick Action: Publish New Event */}
           <button
-            onClick={() => setActiveSubTab('pending')}
-            className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
-              activeSubTab === 'pending'
-                ? 'bg-white text-slate-900 shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            type="button"
+            onClick={() => setShowAddEventModal(true)}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-bold shadow-sm flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all"
           >
-            <span>Approvals Queue</span>
-            {pendingEvents.length > 0 && (
-              <span className="bg-amber-100 text-amber-800 text-[10px] font-mono font-bold px-1.5 rounded">
-                {pendingEvents.length}
-              </span>
-            )}
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>+ Publish New Event</span>
           </button>
-          <button
-            onClick={() => setActiveSubTab('venue-requests')}
-            className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
-              activeSubTab === 'venue-requests'
-                ? 'bg-white text-slate-900 shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>Venue Listing Requests</span>
-            {venueListings.filter((l) => l.approvalStatus === 'Pending Approval').length > 0 && (
-              <span className="bg-indigo-100 text-indigo-800 text-[10px] font-mono font-bold px-1.5 rounded">
-                {venueListings.filter((l) => l.approvalStatus === 'Pending Approval').length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveSubTab('venues')}
-            className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 ${
-              activeSubTab === 'venues'
-                ? 'bg-white text-slate-900 shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Venues & Capacities
-          </button>
-          <button
-            onClick={() => setActiveSubTab('rls')}
-            className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
-              activeSubTab === 'rls'
-                ? 'bg-white text-slate-900 shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span>RLS Security & Audit</span>
-          </button>
+
+          {/* Section Navigation Tabs */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg text-xs font-medium overflow-x-auto">
+            <button
+              onClick={() => setActiveSubTab('pending')}
+              className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                activeSubTab === 'pending'
+                  ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>Approvals Queue</span>
+              {pendingEvents.length > 0 && (
+                <span className="bg-amber-100 text-amber-800 text-[10px] font-mono font-bold px-1.5 rounded">
+                  {pendingEvents.length}
+                </span>
+              )}
+            </button>
+
+            {/* NEW SUB-TAB: Listing & Contact Requests */}
+            <button
+              onClick={() => setActiveSubTab('contact-requests')}
+              className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                activeSubTab === 'contact-requests'
+                  ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Listing & Contact Requests</span>
+              {contactRequests.filter((r) => r.status === 'New').length > 0 && (
+                <span className="bg-indigo-600 text-white text-[10px] font-mono font-bold px-1.5 rounded-full">
+                  {contactRequests.filter((r) => r.status === 'New').length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveSubTab('venues')}
+              className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                activeSubTab === 'venues'
+                  ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Venues & Capacities
+            </button>
+
+            <button
+              onClick={() => setActiveSubTab('venue-requests')}
+              className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                activeSubTab === 'venue-requests'
+                  ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Community Spaces</span>
+              {venueListings.filter((l) => l.approvalStatus === 'Pending Approval').length > 0 && (
+                <span className="bg-indigo-100 text-indigo-800 text-[10px] font-mono font-bold px-1.5 rounded">
+                  {venueListings.filter((l) => l.approvalStatus === 'Pending Approval').length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveSubTab('rls')}
+              className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                activeSubTab === 'rls'
+                  ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>RLS Security & Audit</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -740,6 +919,317 @@ export const AdminPortal = ({
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SUB-TAB: LISTING & CONTACT REQUESTS (PRIVATE ADMIN INQUIRIES) */}
+      {activeSubTab === 'contact-requests' && (
+        <div className="space-y-6">
+          {/* Header & KPI Summary */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-indigo-600" />
+                  <span>Private Listing & Contact Requests</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Direct requests submitted by users wishing to list a venue, submit event details, or general inquiries. Review details and convert them into official venues or events.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={loadContactRequests}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors shrink-0 cursor-pointer"
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                  <span>Refresh Requests</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-100 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-slate-500 font-medium block">Total Inquiries</span>
+                <span className="text-xl font-bold font-mono text-slate-900 mt-1 block">
+                  {contactRequests.length}
+                </span>
+              </div>
+              <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                <span className="text-indigo-700 font-medium block">New / Unread</span>
+                <span className="text-xl font-bold font-mono text-indigo-950 mt-1 block">
+                  {contactRequests.filter((r) => r.status === 'New').length}
+                </span>
+              </div>
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl">
+                <span className="text-purple-700 font-medium block">Under Review</span>
+                <span className="text-xl font-bold font-mono text-purple-950 mt-1 block">
+                  {contactRequests.filter((r) => r.status === 'Under Review').length}
+                </span>
+              </div>
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <span className="text-emerald-700 font-medium block">Contacted / Handled</span>
+                <span className="text-xl font-bold font-mono text-emerald-950 mt-1 block">
+                  {contactRequests.filter((r) => r.status === 'Completed' || r.status === 'Contacted').length}
+                </span>
+              </div>
+            </div>
+
+            {/* Filters Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
+                <span className="font-semibold text-slate-500 text-[11px] uppercase tracking-wider shrink-0">
+                  Filter:
+                </span>
+                {['all', 'List a Property', 'Submit Event Details', 'General Inquiry'].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setRequestTypeFilter(t)}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                      requestTypeFilter === t
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {t === 'all' ? 'All Types' : t}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-semibold text-slate-500 text-[11px] uppercase tracking-wider shrink-0">
+                  Status:
+                </span>
+                <select
+                  value={requestStatusFilter}
+                  onChange={(e) => setRequestStatusFilter(e.target.value)}
+                  className="px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-hidden focus:border-indigo-600"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="New">New</option>
+                  <option value="Under Review">Under Review</option>
+                  <option value="Contacted">Contacted</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* List of Requests */}
+          {loadingContactRequests ? (
+            <div className="p-12 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200">
+              <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              Loading requests...
+            </div>
+          ) : contactRequests.length === 0 ? (
+            <div className="p-12 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200">
+              No private listing or contact requests found for this filter.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {contactRequests.map((req) => (
+                <div
+                  key={req._id}
+                  className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4 hover:border-slate-300 transition-colors"
+                >
+                  {/* Top Bar: Sender identity, type badge, status dropdown, date */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                        {req.name ? req.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-slate-900 text-sm">{req.name}</h4>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              req.requestType === 'List a Property'
+                                ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                : req.requestType === 'Submit Event Details'
+                                ? 'bg-violet-50 text-violet-700 border border-violet-200'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            {req.requestType}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                          <span>Submitted: {new Date(req.createdAt).toLocaleString()}</span>
+                          <span>•</span>
+                          <span className="font-mono text-slate-400">ID: {(req._id || '').slice(-6)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status Changer */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold text-slate-400">Status:</span>
+                      <select
+                        value={req.status}
+                        disabled={updatingRequestId === req._id}
+                        onChange={(e) => handleUpdateContactStatus(req._id, e.target.value)}
+                        className={`text-xs font-bold px-2.5 py-1 rounded-xl border transition-colors cursor-pointer ${
+                          req.status === 'New'
+                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            : req.status === 'Under Review'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : req.status === 'Contacted'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : req.status === 'Completed'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-rose-50 text-rose-700 border-rose-200'
+                        }`}
+                      >
+                        <option value="New">New</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Contacted">Contacted</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Rejected">Rejected</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Property / Event Title & Location Banner */}
+                  {(req.itemName || req.location) && (
+                    <div className="flex flex-wrap items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                      {req.itemName && (
+                        <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                          <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>{req.itemName}</span>
+                        </div>
+                      )}
+                      {req.location && (
+                        <div className="flex items-center gap-1.5 text-slate-600">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{req.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Message body */}
+                  <div className="text-xs text-slate-700 leading-relaxed bg-slate-50/60 p-3.5 rounded-xl border border-slate-100">
+                    <p className="font-medium text-slate-500 text-[10px] uppercase mb-1">
+                      User Message / Description:
+                    </p>
+                    <p className="whitespace-pre-wrap">{req.message}</p>
+                  </div>
+
+                  {/* Contact channels & Conversion actions */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2 text-xs">
+                    {/* Direct Contact Buttons */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={`mailto:${req.email}?subject=Regarding your EventSphere Request (${req.itemName || req.requestType})`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-xl transition-colors"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Email: {req.email}</span>
+                      </a>
+
+                      <a
+                        href={`tel:${req.phone}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-xl transition-colors"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Call: {req.phone}</span>
+                      </a>
+
+                      {req.phone && (
+                        <a
+                          href={`https://wa.me/${req.phone.replace(/[^0-9]/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold rounded-xl transition-colors border border-emerald-200"
+                        >
+                          <span>WhatsApp</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+
+                    {/* One-click conversion action buttons */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {req.requestType === 'List a Property' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCreateVenueFromRequest(req)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                        >
+                          <Building2 className="w-3.5 h-3.5" />
+                          <span>Create Venue from Request</span>
+                        </button>
+                      )}
+
+                      {req.requestType === 'Submit Event Details' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCreateEventFromRequest(req)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Publish Event from Request</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Internal Notes Row */}
+                  <div className="pt-2 border-t border-slate-100">
+                    {editingNotesId === req._id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          rows={2}
+                          value={notesDraft}
+                          onChange={(e) => setNotesDraft(e.target.value)}
+                          placeholder="Add internal notes visible only to administrators..."
+                          className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingNotesId(null)}
+                            className="px-2.5 py-1 text-[11px] text-slate-600 hover:text-slate-900 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveNotes(req._id)}
+                            className="px-3 py-1 bg-slate-900 text-white text-[11px] font-bold rounded-lg cursor-pointer"
+                          >
+                            Save Note
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between text-[11px]">
+                        <div className="text-slate-500">
+                          <span className="font-semibold text-slate-700">Internal Notes: </span>
+                          <span>{req.internalNotes || 'No notes added yet.'}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingNotesId(req._id);
+                            setNotesDraft(req.internalNotes || '');
+                          }}
+                          className="text-indigo-600 font-semibold hover:underline cursor-pointer"
+                        >
+                          {req.internalNotes ? 'Edit Note' : '+ Add Note'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -1328,6 +1818,194 @@ export const AdminPortal = ({
           isOpen={Boolean(adminPreviewVenue)}
           onClose={() => setAdminPreviewVenue(null)}
         />
+      )}
+
+      {/* Admin Publish New Event Modal */}
+      {showAddEventModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-scaleIn space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-base font-bold text-slate-900">
+                  Publish New Event (Administrator)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddEventModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Directly publish an event to public event discovery and automatically assign it to an organizer club account.
+            </p>
+
+            {addEventError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2 text-xs text-rose-800">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+                <span>{addEventError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handlePublishAdminEvent} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Event Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={newEventTitle}
+                  onChange={(e) => setNewEventTitle(e.target.value)}
+                  placeholder="e.g. Annual Campus Technology Expo 2026"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-hidden focus:border-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Category *</label>
+                  <select
+                    value={newEventCategory}
+                    onChange={(e) => setNewEventCategory(e.target.value)}
+                    className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white"
+                  >
+                    <option value="Hackathon">Hackathon</option>
+                    <option value="Standup Comedy">Standup Comedy</option>
+                    <option value="Seminar">Seminar</option>
+                    <option value="Cultural Show">Cultural Show</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Timing</label>
+                  <input
+                    type="text"
+                    value={newEventTime}
+                    onChange={(e) => setNewEventTime(e.target.value)}
+                    placeholder="e.g. 10:00 AM - 01:00 PM"
+                    className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Venue *</label>
+                  <select
+                    value={newEventVenueId}
+                    onChange={(e) => setNewEventVenueId(e.target.value)}
+                    className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white"
+                  >
+                    {venues.map((v) => (
+                      <option key={v._id} value={v._id}>
+                        {v.venue_name} ({v.max_capacity} Seats)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Assign Organizer *</label>
+                  <select
+                    value={newEventOrganizerId}
+                    onChange={(e) => setNewEventOrganizerId(e.target.value)}
+                    className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white font-medium"
+                  >
+                    {organizers.map((o) => (
+                      <option key={o._id} value={o._id}>
+                        {o.name} ({o.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Event Date *</label>
+                <input
+                  type="date"
+                  required
+                  min={new Date().toISOString().split('T')[0]}
+                  value={newEventDate}
+                  onChange={(e) => setNewEventDate(e.target.value)}
+                  className="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl font-mono"
+                />
+              </div>
+
+              {/* Poster Presets & URL */}
+              <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <label className="block font-semibold text-slate-700">Poster Image URL or Preset</label>
+                <input
+                  type="url"
+                  value={newEventPoster}
+                  onChange={(e) => setNewEventPoster(e.target.value)}
+                  placeholder="https://images.unsplash.com/..."
+                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white font-mono"
+                />
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(EVENT_POSTER_PRESETS).map(([name, url]) => (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => setNewEventPoster(url)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+                        newEventPoster === url
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      + {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Description *</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={newEventDescription}
+                  onChange={(e) => setNewEventDescription(e.target.value)}
+                  placeholder="Outline program schedule, speakers, and instructions..."
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Tags (Comma Separated)</label>
+                <input
+                  type="text"
+                  value={newEventTags}
+                  onChange={(e) => setNewEventTags(e.target.value)}
+                  placeholder="e.g. AI, Exhibition, Free Passes"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddEventModal(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={publishingEvent}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                >
+                  {publishingEvent ? 'Publishing...' : 'Publish & Broadcast Event'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -28,6 +28,7 @@ const MyListings = lazy(() =>
   import('./components/MyListings.jsx').then((m) => ({ default: m.MyListings }))
 );
 import { VenueDetailModal } from './components/VenueDetailModal.jsx';
+import { ContactListingSection } from './components/ContactListingSection.jsx';
 
 // Zero-CLS Suspense Skeleton matching final view layout
 const PortalSkeleton = () => (
@@ -198,15 +199,20 @@ export default function App() {
     }
   };
 
-  const handleOpenListVenue = () => {
-    if (!currentUser) {
-      setRedirectAfterLogin('list-venue');
-      setActiveTab('login');
-      addToast('info', 'Please sign in or create an account to list your venue.');
-      return;
+  const handleScrollToContact = () => {
+    const el = document.getElementById('contact-listing-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setActiveTab('feed');
+      setTimeout(() => {
+        document.getElementById('contact-listing-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 150);
     }
-    setEditingVenue(null);
-    setActiveTab('list-venue');
+  };
+
+  const handleOpenListVenue = () => {
+    handleScrollToContact();
   };
 
   // Demo Switch Handler
@@ -265,8 +271,8 @@ export default function App() {
   };
 
   const handleSelectTab = (tab) => {
-    if (tab === 'list-venue' && !currentUser) {
-      handleOpenListVenue();
+    if (tab === 'list-venue') {
+      handleScrollToContact();
       return;
     }
     if (tab === 'my-listings' && !currentUser) {
@@ -460,6 +466,9 @@ export default function App() {
           }}
         />
       )}
+
+      {/* Interactive "Have a Venue or Event to List?" Section */}
+      <ContactListingSection currentUser={currentUser} />
 
       {/* Clean Anti-Slop Footer with Core Web Vitals HUD Launcher */}
       <footer className="mt-auto border-t border-slate-200 bg-white py-6">

@@ -357,4 +357,49 @@ export const api = {
     });
     return res.inquiry;
   },
+
+  // Private Admin Listing & Contact Inquiries
+  async getContactConfig() {
+    const res = await apiRequest('/api/config/contact');
+    return res;
+  },
+
+  async submitContactRequest(data) {
+    const res = await apiRequest('/api/contact-requests', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+
+  async getAdminContactRequests(params = {}) {
+    const query = new URLSearchParams();
+    if (params.status && params.status !== 'all') query.set('status', params.status);
+    if (params.requestType && params.requestType !== 'all') query.set('requestType', params.requestType);
+    const queryString = query.toString();
+    const endpoint = `/api/admin/contact-requests${queryString ? `?${queryString}` : ''}`;
+    const res = await apiRequest(endpoint);
+    return res.requests || [];
+  },
+
+  async updateAdminContactRequest(id, updates) {
+    const res = await apiRequest(`/api/admin/contact-requests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+    return res.request;
+  },
+
+  async getAdminOrganizers() {
+    const res = await apiRequest('/api/admin/organizers');
+    return res.organizers || [];
+  },
+
+  async adminCreateEvent(data) {
+    const res = await apiRequest('/api/admin/events', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.event;
+  },
 };

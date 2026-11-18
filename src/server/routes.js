@@ -14,11 +14,26 @@ import {
   simulateRLSCheck,
   signToken,
 } from './rls.js';
+import { sendAdminContactNotification } from './email.js';
 
 export const apiRouter = Router();
 
 // In-memory verification code registry for password recovery: email -> { code, expiresAt }
 const passwordResetCodes = new Map();
+
+// In-memory rate-limiter for public contact inquiries: IP -> [timestamp]
+const contactRateLimits = new Map();
+function checkContactRateLimit(ip) {
+  const windowMs = 10 * 60 * 1000;
+  const now = Date.now();
+  const history = (contactRateLimits.get(ip) || []).filter((t) => now - t < windowMs);
+  if (history.length >= 5) {
+    return false;
+  }
+  history.push(now);
+  contactRateLimits.set(ip, history);
+  return true;
+}
 
 // Apply RLS Auth Context extractor to all requests
 apiRouter.use(rlsAuthContext);
@@ -1032,5 +1047,216 @@ apiRouter.post('/listings/:id/inquire', async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Failed to send inquiry.' });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 7. Contact & Listing Inquiries (Private Admin Requests)
+// -----------------------------------------------------------------------------
+
+// GET /api/config/contact (Public verified admin contact info)
+apiRouter.get('/config/contact', async (req, res) => {
+  try {
+    const adminEmail = await db.getAdminContactEmail();
+    return res.json({
+      adminEmail,
+      supportHours: 'Mon - Fri, 9:00 AM - 5:00 PM',
+      organization: 'EventSphere Administration Desk',
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to retrieve admin contact info.' });
+  }
+});
+
+// POST /api/contact-requests (Public / Simple listing inquiry submission)
+apiRouter.post('/contact-requests', async (req, res) => {
+  try {
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    if (!checkContactRateLimit(clientIp)) {
+      return res.status(429).json({
+        error: 'Too many requests. Please wait a few minutes before submitting another inquiry.',
+      });
+    }
+
+    const { name, email, phone, requestType, itemName, location, message } = req.body || {};
+
+    if (!name || name.trim().length < 2) {
+      return res.status(400).json({ error: 'Please provide a valid full name.' });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email.trim())) {
+      return res.status(400).json({ error: 'Please provide a valid email address.' });
+    }
+    if (!phone || phone.trim().length < 7) {
+      return res.status(400).json({ error: 'Please provide a valid contact phone number.' });
+    }
+    if (!message || message.trim().length < 5) {
+      return res.status(400).json({ error: 'Please provide a message or description.' });
+    }
+
+    const validTypes = ['List a Property', 'Submit Event Details', 'General Inquiry'];
+    const chosenType = validTypes.includes(requestType) ? requestType : 'List a Property';
+
+    const contactReq = await db.createContactRequest({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      requestType: chosenType,
+      itemName: (itemName || '').trim(),
+      location: (location || '').trim(),
+      message: message.trim(),
+      userId: req.auth?.uid || null,
+    });
+
+    const adminEmail = await db.getAdminContactEmail();
+
+    // Trigger async email dispatch (non-blocking)
+    sendAdminContactNotification({ adminEmail, request: contactReq }).catch((e) =>
+      console.warn('[Email Service] Failed in background:', e.message)
+    );
+
+    logAudit({
+      actor: req.auth?.user?.name || name.trim(),
+      actorRole: req.auth?.role || 'Guest',
+      action: 'SUBMIT_CONTACT_REQUEST',
+      collection: 'contact_requests',
+      outcome: 'ALLOWED',
+      predicate: 'rate_limit < 5 AND valid_payload == true',
+      reason: `Submitted ${chosenType} inquiry: "${contactReq.itemName || 'Inquiry'}"`,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message:
+        'Your request has been privately delivered to the EventSphere Administration team. We will review it promptly.',
+      requestId: contactReq._id,
+    });
+  } catch (err) {
+    console.error('Contact request error:', err);
+    return res.status(500).json({ error: err.message || 'Failed to submit contact request.' });
+  }
+});
+
+// GET /api/admin/contact-requests (RLS Guard: Admin only)
+apiRouter.get('/admin/contact-requests', requireRole(['Admin']), async (req, res) => {
+  try {
+    const { status, requestType } = req.query;
+    const requests = await db.findContactRequests({ status, requestType });
+    return res.json({ requests });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to fetch contact requests.' });
+  }
+});
+
+// PATCH /api/admin/contact-requests/:id (RLS Guard: Admin only)
+apiRouter.patch('/admin/contact-requests/:id', requireRole(['Admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, internalNotes } = req.body || {};
+
+    const updated = await db.updateContactRequest(id, { status, internalNotes });
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'UPDATE_CONTACT_REQUEST_STATUS',
+      collection: 'contact_requests',
+      outcome: 'ALLOWED',
+      predicate: 'auth.role == "Admin"',
+      reason: `Updated request ${id} status to "${status || 'updated'}"`,
+    });
+
+    return res.json({ request: updated });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to update contact request.' });
+  }
+});
+
+// GET /api/admin/organizers (RLS Guard: Admin only)
+apiRouter.get('/admin/organizers', requireRole(['Admin']), async (req, res) => {
+  try {
+    const organizers = await db.findOrganizers();
+    return res.json({ organizers });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Failed to fetch organizers.' });
+  }
+});
+
+// POST /api/admin/events (RLS Guard: Admin directly creates and publishes event)
+apiRouter.post('/admin/events', requireRole(['Admin']), async (req, res) => {
+  try {
+    const {
+      title,
+      category,
+      description,
+      venue_id,
+      organizer_id,
+      event_date,
+      event_time,
+      duration_hours,
+      posterImage,
+      tags,
+    } = req.body || {};
+
+    if (!title || !category || !description || !venue_id || !event_date) {
+      return res.status(400).json({
+        error: 'Title, category, description, venue, and event date are required.',
+      });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    if (event_date < today) {
+      return res.status(400).json({
+        error: 'Event date cannot be in the past.',
+      });
+    }
+
+    const venue = await db.findVenueById(venue_id);
+    if (!venue) {
+      return res.status(404).json({ error: 'Selected venue does not exist.' });
+    }
+
+    // Default organizer to req.auth.uid if not specified
+    const targetOrganizerId = organizer_id || req.auth.uid;
+    const organizerUser = await db.findUserById(targetOrganizerId);
+    if (!organizerUser) {
+      return res.status(404).json({ error: 'Selected organizer does not exist.' });
+    }
+
+    // Create event
+    const event = await db.createEvent({
+      title: title.trim(),
+      category,
+      description: description.trim(),
+      venue_id,
+      organizer_id: targetOrganizerId,
+      event_date,
+      event_time: event_time || '10:00 AM - 01:00 PM',
+      duration_hours: Number(duration_hours) || 3,
+      posterImage: posterImage || '',
+      tags: Array.isArray(tags) ? tags : [],
+    });
+
+    // Mark Approved immediately for Admin-created events
+    const approvedEvent = await db.updateEventStatus(event._id, 'Approved');
+
+    logAudit({
+      actor: req.auth.user.name,
+      actorRole: req.auth.role,
+      action: 'ADMIN_MANUALLY_CREATED_EVENT',
+      collection: 'events',
+      outcome: 'ALLOWED',
+      predicate: 'auth.role == "Admin"',
+      reason: `Admin published event "${approvedEvent.title}" assigned to organizer "${organizerUser.name}"`,
+    });
+
+    return res.status(201).json({ event: approvedEvent });
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({
+        error: 'This venue is already booked for the selected date. Please choose a different date or venue.',
+      });
+    }
+    return res.status(500).json({ error: err.message || 'Failed to publish event.' });
   }
 });

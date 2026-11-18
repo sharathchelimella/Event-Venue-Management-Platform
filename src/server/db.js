@@ -189,6 +189,35 @@ export const venueInquirySchema = new Schema({
 venueInquirySchema.index({ listingId: 1 });
 venueInquirySchema.index({ ownerId: 1 });
 
+// Contact & Listing Requests Schema (Private Admin Inquiries)
+export const contactRequestSchema = new Schema({
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, trim: true, lowercase: true },
+  phone: { type: String, required: true, trim: true },
+  requestType: {
+    type: String,
+    enum: ['List a Property', 'Submit Event Details', 'General Inquiry'],
+    default: 'List a Property',
+    required: true,
+  },
+  itemName: { type: String, default: '', trim: true },
+  location: { type: String, default: '', trim: true },
+  message: { type: String, required: true, trim: true },
+  status: {
+    type: String,
+    enum: ['New', 'Under Review', 'Contacted', 'Completed', 'Rejected'],
+    default: 'New',
+  },
+  internalNotes: { type: String, default: '' },
+  userId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+contactRequestSchema.index({ status: 1, createdAt: -1 });
+contactRequestSchema.index({ requestType: 1 });
+contactRequestSchema.index({ email: 1 });
+
 export const UserModel = mongoose.models.User || mongoose.model('User', userSchema);
 export const VenueModel = mongoose.models.Venue || mongoose.model('Venue', venueSchema);
 export const EventModel = mongoose.models.Event || mongoose.model('Event', eventSchema);
@@ -198,6 +227,8 @@ export const VenueListingModel =
   mongoose.models.VenueListing || mongoose.model('VenueListing', venueListingSchema);
 export const VenueInquiryModel =
   mongoose.models.VenueInquiry || mongoose.model('VenueInquiry', venueInquirySchema);
+export const ContactRequestModel =
+  mongoose.models.ContactRequest || mongoose.model('ContactRequest', contactRequestSchema);
 
 // Format helper to convert Mongoose documents to plain objects with string IDs
 function formatDoc(doc) {
@@ -239,6 +270,11 @@ function formatDoc(doc) {
   } else if (obj.senderId && typeof obj.senderId !== 'object') {
     obj.senderId = obj.senderId.toString();
   }
+  if (obj.userId && typeof obj.userId === 'object' && obj.userId._id) {
+    obj.userId = formatDoc(obj.userId);
+  } else if (obj.userId && typeof obj.userId !== 'object') {
+    obj.userId = obj.userId.toString();
+  }
   return obj;
 }
 
@@ -254,6 +290,7 @@ class CampusMongoEngine {
       registrations: [],
       listings: [],
       inquiries: [],
+      contactRequests: [],
     };
     this.isConnectedToMongo = false;
     this.loadSnapshot();
@@ -266,6 +303,7 @@ class CampusMongoEngine {
         this.state = {
           listings: [],
           inquiries: [],
+          contactRequests: [],
           ...JSON.parse(raw),
         };
       }
@@ -296,6 +334,7 @@ class CampusMongoEngine {
           RegistrationModel.init(),
           VenueListingModel.init(),
           VenueInquiryModel.init(),
+          ContactRequestModel.init(),
         ]);
         return true;
       } catch (err) {
@@ -1497,6 +1536,148 @@ class CampusMongoEngine {
     inq.status = status;
     this.saveSnapshot();
     return inq;
+  }
+
+  // ---- Verified Admin Contact Configuration ----
+  async getAdminContactEmail() {
+    if (process.env.ADMIN_CONTACT_EMAIL) {
+      return process.env.ADMIN_CONTACT_EMAIL;
+    }
+    try {
+      const admins = await this.findUsers({ role: 'Admin' });
+      if (admins && admins.length > 0) {
+        return admins[0].email;
+      }
+    } catch {
+      // Ignore
+    }
+    return 'dean.admin@campus.edu';
+  }
+
+  // ---- Organizers Registry ----
+  async findOrganizers() {
+    if (this.isConnectedToMongo) {
+      const list = await UserModel.find({ role: { $in: ['Organizer', 'Admin'] } })
+        .select('_id name email role avatar')
+        .sort({ name: 1 })
+        .lean();
+      return list.map((u) => ({ ...u, _id: u._id.toString() }));
+    }
+    return (this.state.users || [])
+      .filter((u) => u.role === 'Organizer' || u.role === 'Admin')
+      .map((u) => ({
+        _id: u._id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        avatar: u.avatar || '',
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // ---- Private Admin Contact & Listing Inquiries ----
+  async createContactRequest(data) {
+    const validTypes = ['List a Property', 'Submit Event Details', 'General Inquiry'];
+    const requestType = validTypes.includes(data.requestType) ? data.requestType : 'List a Property';
+
+    if (this.isConnectedToMongo) {
+      const created = await ContactRequestModel.create({
+        name: (data.name || '').trim(),
+        email: (data.email || '').trim().toLowerCase(),
+        phone: (data.phone || '').trim(),
+        requestType,
+        itemName: (data.itemName || '').trim(),
+        location: (data.location || '').trim(),
+        message: (data.message || '').trim(),
+        userId: data.userId || null,
+        status: 'New',
+        internalNotes: '',
+      });
+      return formatDoc(created);
+    }
+
+    if (!this.state.contactRequests) this.state.contactRequests = [];
+    const item = {
+      _id: this.generateId(),
+      name: (data.name || '').trim(),
+      email: (data.email || '').trim().toLowerCase(),
+      phone: (data.phone || '').trim(),
+      requestType,
+      itemName: (data.itemName || '').trim(),
+      location: (data.location || '').trim(),
+      message: (data.message || '').trim(),
+      userId: data.userId || null,
+      status: 'New',
+      internalNotes: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.state.contactRequests.push(item);
+    this.saveSnapshot();
+    return item;
+  }
+
+  async findContactRequests(filters = {}) {
+    const { requestType, status } = filters;
+    if (this.isConnectedToMongo) {
+      const query = {};
+      if (requestType && requestType !== 'all') query.requestType = requestType;
+      if (status && status !== 'all') query.status = status;
+      const list = await ContactRequestModel.find(query)
+        .populate('userId', 'name email role')
+        .sort({ createdAt: -1 })
+        .lean();
+      return list.map(formatDoc);
+    }
+
+    let list = this.state.contactRequests || [];
+    if (requestType && requestType !== 'all') {
+      list = list.filter((r) => r.requestType === requestType);
+    }
+    if (status && status !== 'all') {
+      list = list.filter((r) => r.status === status);
+    }
+    return [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  async findContactRequestById(id) {
+    if (this.isConnectedToMongo) {
+      if (!mongoose.Types.ObjectId.isValid(id)) return null;
+      const req = await ContactRequestModel.findById(id).populate('userId', 'name email role').lean();
+      return formatDoc(req);
+    }
+    const req = (this.state.contactRequests || []).find((r) => r._id === id);
+    return req || null;
+  }
+
+  async updateContactRequest(id, updates = {}) {
+    const validStatuses = ['New', 'Under Review', 'Contacted', 'Completed', 'Rejected'];
+    const sanitized = {};
+    if (updates.status && validStatuses.includes(updates.status)) {
+      sanitized.status = updates.status;
+    }
+    if (updates.internalNotes !== undefined) {
+      sanitized.internalNotes = updates.internalNotes;
+    }
+    sanitized.updatedAt = new Date();
+
+    if (this.isConnectedToMongo) {
+      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid request ID.');
+      const updated = await ContactRequestModel.findByIdAndUpdate(id, { $set: sanitized }, { new: true });
+      if (!updated) throw new Error('Contact request not found.');
+      return formatDoc(updated);
+    }
+
+    if (!this.state.contactRequests) this.state.contactRequests = [];
+    const index = this.state.contactRequests.findIndex((r) => r._id === id);
+    if (index === -1) throw new Error('Contact request not found.');
+    this.state.contactRequests[index] = {
+      ...this.state.contactRequests[index],
+      ...sanitized,
+      updatedAt: new Date().toISOString(),
+    };
+    this.saveSnapshot();
+    return this.state.contactRequests[index];
   }
 }
 
